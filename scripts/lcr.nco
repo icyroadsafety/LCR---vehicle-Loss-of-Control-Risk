@@ -117,19 +117,19 @@ if(DO_LCR==1)
 
   lcr[time,lat,lon]=0.0f;
 
-  where  (qpf > 0f && qpf < 0.1f && surfacetemp <= 36f && surfacewb < 32f)
+  where  (qpf > 0f && qpf < 0.1f && surfacetemp <= 35f && surfacewb <= 32f)
     lcr = 1;
 
-  where  (qpf>= 0.1f && qpf < 0.25f && surfacetemp <= 36f && surfacewb < 32f)
+  where  (qpf>= 0.1f && qpf < 0.25f && surfacetemp <= 35f && surfacewb <= 32f)
     lcr = 2f;
 
-  where (qpf >= 0.25f && surfacetemp <= 36f && surfacewb < 32f)
+  where (qpf >= 0.25f && surfacetemp <= 35f && surfacewb <= 32f)
     lcr = 3f;
       
   where (lcr != 0.0f && surfacetemp <= 32f)
     lcr = lcr + 1f;
       
-  where (lcr != 0f && surfacetemp >= 25f && surfacetemp <= 29f)
+  where (lcr != 0f && surfacetemp >= 24f && surfacetemp <= 29f)
     lcr = lcr + 2f;
 
   where (lcr != 0 && surfacetemp < 32f)
@@ -166,5 +166,4 @@ if(DO_LCR==1)
     lcr = 0f;
 
  }
-
 
