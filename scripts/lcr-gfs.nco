@@ -1,0 +1,187 @@
+/*******************************************************
+* calculates lcr 
+* renames variables 
+* modifies units 
+*
+* usage ncap2 -4  -A  -S scripts/lcr.nco in.nc out.nc
+*******************************************************/
+
+*DBG=1;
+*CELSIUSTOFAHRENHEIT=1;
+*DO_LCR=1;
+
+
+// do all calculations in Celsius
+// Convert from kelvin to Celsius
+// then later to Fahrenheit  
+if(exists(tmp2m))
+   surfacetemp=tmp2m-273.15f;
+
+if(exists(tmp2m)){
+        tf=24;
+        surfacetemp24[$lat, $lon]=surfacetemp(tf,:,:);
+        for(idx=1; idx<3; idx++) {
+           surfacetemp24+=surfacetemp( (tf-idx),:,:  );
+        }               
+        surfacetemp24 = surfacetemp24/3.0f;
+}
+
+
+if(exists(rh2m)){
+    surfacerh=rh2m;
+    surfacerh@units="%";
+}
+
+if(exists(cfrzrsfc)){
+    zrptype=cfrzrsfc;
+    zrptype@units="present";
+}
+
+// total precipitation
+if(exists(apcpsfc))
+{
+  qpf= apcpsfc * 0.039370f; 
+  qpf@units="inches";
+
+// make fresh copy of variables
+  ipf=qpf;
+    // decumulate - subtract from each step the previous step
+  ipf(1:,:,:)=qpf(1:,:,:) - qpf(0:-2,:,:);
+
+}
+
+// Assign BFP
+if(exists(apcpsfc))
+{
+  bfp=ipf;
+  bfp@units="inches";
+  bfp@long_name="**BFP - Precipitation in surface temperature at or below-freezing [inches]";
+}
+
+
+// calculate dew point
+if(exists(dpt2m))
+{
+  // convert from Kelvin to Celsius
+  surfacedp=dpt2m-273.15f;
+}
+else
+{
+  // calculate dew point using 1980 Bolton formula - (celsius)
+  surfacedp=surfacerh/100.0f* 6.112f*exp( (17.67f*surfacetemp) / (surfacetemp+243.5f));
+  
+ }
+  
+
+// calculate wet bulb temperature
+// keep it as double for now ?
+if(exists(surfacetemp))
+{
+  
+  surfacewb = surfacetemp * atan(0.151977 * (surfacerh + 8.313659)^0.5)
+               + atan(surfacetemp + surfacerh)
+               - atan(surfacerh - 1.676331)
+               + 0.00391838 * (surfacerh)^1.5 * atan(0.023101 * surfacerh)
+               - 4.686035;
+
+
+  
+}
+  
+if(DBG==1){
+  surfacedbg=surfacewb.float()-surfacetemp;
+  suerface@units="celsius";
+  surfacedbg@long_name="** debug wbc  wbc-Temp  [C]";
+ }
+
+
+// Convert from C to F
+if(CELSIUSTOFAHRENHEIT==1)
+{
+   surfacetemp=surfacetemp*1.8f+32.0f;  
+   surfacetemp@units="fahrenheit";
+   surfacetemp@long_name="** 2 m above ground surface temperature [F] ";
+
+   surfacedp=surfacedp*1.8f+32.0f;  
+   surfacedp@units="fahrenheit";
+   surfacedp@long_name="** 2 m above ground dew point temperature -  [F]";
+
+   surfacewb=surfacewb*1.8f+32.0f;  
+   surfacewb@units="fahrenheit";
+   surfacewb@long_name="** 2 m above ground wet bulb  temperature - custom calculation [F]";
+  
+}
+else
+{
+
+   surfacetemp@units="celsius";
+   surfacetemp@long_name="** 2 m above ground surface temperature [C] ";
+
+   surfacedp@units="celsius";
+   surfacedp@long_name="** 2 m above ground dew point temperature -  [C]";
+
+   surfacewb@units="celsius";
+   surfacewb@long_name="** 2 m above ground wet bulb  temperature - custom calculation [C]";
+
+ }
+   
+
+
+if(DO_LCR==1)
+{  
+
+  lcr[time,lat,lon]=0.0f;
+
+// Baseline LCR based on near-freezing precip amount
+  where  (ipf > 0f && ipf < 0.05f && surfacetemp <= 35f && surfacewb <= 32f)
+    lcr = 1f;
+
+  where  (ipf >= 0.05f && ipf < 0.1f && surfacetemp <= 35f && surfacewb <= 32f)
+    lcr = 2f;
+
+  where  (ipf >= 0.1f && surfacetemp <= 35f && surfacewb <= 32f)
+    lcr = 3f;
+      
+// Below-freezing temperature factor
+  where (lcr != 0.0f && surfacetemp <= 32f)
+    lcr = lcr + 1f;
+      
+// Below-freezing temperature history factor
+  where (lcr != 0.0f && surfacetemp24 < 32f)
+    lcr = lcr + 1f;
+
+// Optimal ice bonding/refreezing temperature range factor
+  where (lcr != 0f && surfacetemp >= 24f && surfacetemp <= 29f)
+    lcr = lcr + 2f;
+
+// Freezing rain or freezing drizzle factor
+  where  (zrptype < 0f)
+    lcr = lcr + 2f;
+
+// Reduced de-icing capacity of southern USA factor
+  where (lcr != 0f && lat <= 35f)
+    lcr = lcr + 1f;
+
+  where (lcr != 0f && lat <= 34f)
+    lcr = lcr + 1f;
+
+  where (lcr != 0f && lat <= 33f)
+    lcr = lcr + 1f;
+
+// Freezing fog factor
+  where (qpf == 0f && surfacerh > 99f && surfacetemp <= 31f)
+    lcr = 1f;
+
+  where (qpf == 0f && surfacerh > 99f && surfacetemp <= 29f)
+    lcr = lcr + 1f;
+
+  where (qpf == 0f && surfacerh > 99f && surfacetemp <= 27f)
+    lcr = lcr + 1f;
+
+// Set above-freezing BFP gridpoints to zero
+  where (surfacetemp > 32f)
+    bfp = 0.0f;
+
+}
+
+
