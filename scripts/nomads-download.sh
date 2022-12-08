@@ -11,7 +11,7 @@ model=$1
 modeldate=$2
 modelrun=$3
 
-DBG=1
+DBG=0
 
 if [[ $DBG -eq 1 ]]; then
    Args="-4 -O -d time,0,1"
