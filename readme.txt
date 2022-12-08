@@ -1,53 +1,71 @@
-** How to run the LCR script on model data **
+****************************************************
+* LCR (vehicle Loss-of-Control Risk) script documentation
+* Current version 1.1 updated Dcember 7, 2022
+* All downloads: http://icyroadsafety.com/lcr/
+****************************************************
 
-The LCR script runs using NCO Toolkit commands in Linux.  To run the script, you will need a Linux machine (or a virtual machine running Linux in Windows or Mac). Both the NCO Toolkit and Ubuntu Linux are free and open-source. You can use the free Windows Subsystem for Linux (WSL) to install and run Ubuntu Linux within Windows (you will need to enable virtualization both in Windows and in your BIOS).
+The LCR script runs using NCO Toolkit commands in Linux. To run the script, you will need a Linux machine (or a virtual machine running Linux in Windows or Mac). Both the NCO Toolkit and Ubuntu Linux are free and open-source. You can use the free Windows Subsystem for Linux (WSL) to install and run Ubuntu Linux within Windows (you will need to enable virtualization both in Windows and in your BIOS).
 
-1.) Install the NCO toolkit in Linux. Install NCO with the following command:
+Install the NCO toolkit and related functions in Linux. From a fresh Linux install, type and run the following commands in sequence:
 
-	sudo apt-get install nco
+    sudo apt-get update
 
-If your Linux installation is new, you may get an error when running the above command. If that occurs, run the following command first:
+    sudo apt-get install nco
 
-	sudo apt-get update
+    sudo apt-get install netcdf-bin
 
-2.) Download the lcr.nco script to your Linux installation. The URL for the script is:
+    sudo apt-get install cdo
 
-	https://icyroadsafety.com/lcr/lcr-gfs.nco
+Download the LCR script to your Linux installation. The URL for the script is:
 
-You can use a browser like Lynx for this (install it with the command "sudo apt-get install lynx")
-    
-3.) Download model data with the ncks command. The following command will download the necessary parameters in model output from the NOAA Nomads server. Just replace the date in the command and the desired run of the model (00z, 06z, 12z, 18z for example):
+       https://icyroadsafety.com/lcr/lcr.nco
 
-	ncks -v tmp2m,dpt2m,rh2m,apcpsfc,cfrzrsfc https://nomads.ncep.noaa.gov/dods/gfs_0p25/gfs20221201/gfs_0p25_12z gfs20221201_12z.nc
+   You can use a browser like Lynx for this (install it with the command "sudo apt-get install lynx").
 
-To limit the download to CONUS gridpoints:
+Download model data with the ncks command. The following command will download the necessary parameters in model output from the NOAA Nomads server:
 
-	ncks -d lat,20.0,60.0 -d lon,210.0,310.0 -v tmp2m,dpt2m,rh2m,apcpsfc,cfrzrsfc https://nomads.ncep.noaa.gov/dods/gfs_0p25/gfs20221205/gfs_0p25_18z gfs20221205_18z.nc
-    
-4.) Run the LCR script on the downloaded model data file. Edit the following command with the correct date and model run that you downloaded in the previous step, then run:
+       ncks -v tmp2m,dpt2m,rh2m,apcpsfc,cfrzrsfc OpenDap-Model-URL outputfile.nc
 
-	ncap2 -4 -S lcr.nco gfs20211214_06z.nc gfs20211214_06z-lcr.nc
+    OpenDap-Model-URL is the location of the OpenDAP data file on the NOMADS server. 
+    This will be different for each model. Go to the NOMADS home page and click the
+    OpenDAP link for the model you need.
 
-5.) Use the data viewer of your choice to generate charts from the resulting file. The free software McIDAS (https://www.ssec.wisc.edu/mcidas/) can generate charts of the resulting data. Choose the "color shaded plan view" and download the XML files to import the color scale for LCR or BFP, and set the scale range from 0 to 12 for LCR or 0 to 2 for BFP.
+    Constrain data by latitude/longitude: You may want to limit the download of data to a
+    specific region like the CONUS or an even smaller geographic area. For example, the 
+    full global GFS data download for the LCR-required variables will be over 2GB. To 
+    save time and limit the data download to CONUS gridpoints only, use the following:
 
-6.) To generate Day 1 and Day 2 forecast charts: The ncwa command generates a new .nc file containing maximum LCR values over a specified time period.
+        ncks -d lat,20.0,60.0 -d lon,210.0,310.0 -v tmp2m,dpt2m,rh2m,apcpsfc,cfrzrsfc OpenDap-Model-URL outputfile.nc
 
-For a Day 1 forecast (06z to 00z) from the 00z GFS (gfs20221205_00z-lcr.nc is the input filename, gfs20221205_00z-lcrmax.nc is the output filename):
+Run the LCR script on the downloaded model data file. Run the following command to calculate LCR and BFP from the downloaded data:
 
-	ncwa -v lcr -d time,1,8 -a time -y max gfs20221205_00z-lcr.nc gfs20221205_00z-lcrmax.nc
+       ncap2 -4 -S lcr.nco downloaded-model-data-file.nc outputfile-lcr.nc
 
-For a Day 1 forecast (12z to 00z) from the 06z GFS (gfs20221205_06z-lcr.nc is the input filename, gfs20221205_06z-lcrmax.nc is the output filename):
+    downloaded-model-data-file.nc is the outputfile.nc from the previous download step, 
+    outputfile-lcr.nc here is the final file containing the LCR and BFP calculations.
 
-	ncwa -v lcr -d time,1,6 -a time -y max gfs20221205_06z-lcr.nc gfs20221205_06z-lcrmax.nc
+Use the data viewer of your choice to generate charts from the resulting file. The free software McIDAS is a good way to generate charts of the resulting data. Choose the "color shaded plan view" and download the XML files to import the color scale for LCR or BFP, and set the scale range from 0 to 12 for LCR or 0 to 0.1 for BFP.
 
-For a Day 1 forecast (18z to 00z) from the 12z GFS (gfs20221205_12z-lcr.nc is the input filename, gfs20221205_12z-lcrmax.nc is the output filename):
+To generate Day 1 and Day 2 forecast charts: The ncwa command generates a new .nc file containing maximum LCR or BFP values over a specified time period.
 
-	ncwa -v lcr -d time,1,4 -a time -y max gfs20221205_12z-lcr.nc gfs20221205_12z-lcrmax.nc
+        ncwa -v lcr -d time,startframe,endframe -a time -y max inputfile-lcr.nc outputfile-lcrmax.nc
 
-For a Day 2 forecast (00z to 00z) from the 12z GFS (gfs20221205_12z-lcr.nc is the input filename, gfs20221205_12z-lcrmax.nc is the output filename):
+    Replace startframe with the time step number where you want the maximum 
+    value calculation to begin, replace endframe with the time step number where you want it to end.
 
-	ncwa -v lcr -d time,3,12 -a time -y max gfs20221205_12z-lcr.nc gfs20221205_12z-lcrmax.nc
+    For 1-hour models like the HRRR, there are 24 timesteps in a day. For models like the 
+    GFS which use 3-hour time steps, there are 8 timesteps in a day. 
 
-For a Day 2 forecast (00z to 00z) from the 18z GFS (gfs20221205_18z-lcr.nc is the input filename, gfs20221205_18z-lcrmax.nc is the output filename):
+    If you wanted to perform a maximum calculation for the 00z HRRR for the 24-hour period 
+    ending at 00z the following day, the startframe would be 1 and the endframe would be 24.
+    For the same situation with the 00z GFS, the startframe would be 1 and the endframe 
+    would be 8. If you wanted to do a "Day 2" forecast for tomorrow (00z tonight through
+    00z tomorrow) from the 18z HRRR, you would make the startframe 6 and the endframe 30.
 
-	ncwa -v lcr -d time,1,10 -a time -y max gfs20221205_18z-lcr.nc gfs20221205_18z-lcrmax.nc
+    Example: 24-hour maximum LCR chart from the 00z HRRR:
+
+       ncwa -v lcr -d time,1,24 -a time -y max inputfile-lcr.nc outputfile-lcrmax.nc
+
+    Example: 24-hour maximum Day 2 BFP chart from the 18z HRRR:
+
+       ncwa -v bfp -d time,6,30 -a time -y max inputfile-lcr.nc outputfile-bfpmax.nc
