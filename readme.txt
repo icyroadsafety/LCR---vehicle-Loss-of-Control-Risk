@@ -6,7 +6,7 @@
 
 The LCR script runs using NCO Toolkit commands in Linux. To run the script, you will need a Linux machine (or a virtual machine running Linux in Windows or Mac). Both the NCO Toolkit and Ubuntu Linux are free and open-source. You can use the free Windows Subsystem for Linux (WSL) to install and run Ubuntu Linux within Windows (you will need to enable virtualization both in Windows and in your BIOS).
 
-Install the NCO toolkit and related functions in Linux. From a fresh Linux install, type and run the following commands in sequence:
+1.) Install the NCO toolkit and related functions in Linux. From a fresh Linux install, type and run the following commands in sequence:
 
     sudo apt-get update
 
@@ -16,13 +16,13 @@ Install the NCO toolkit and related functions in Linux. From a fresh Linux insta
 
     sudo apt-get install cdo
 
-Download the LCR script to your Linux installation. The URL for the script is:
+2.) Download the LCR script to your Linux installation. The URL for the script is:
 
        https://icyroadsafety.com/lcr/lcr.nco
 
    You can use a browser like Lynx for this (install it with the command "sudo apt-get install lynx").
 
-Download model data with the ncks command. The following command will download the necessary parameters in model output from the NOAA Nomads server:
+3.) Download model data with the ncks command. The following command will download the necessary parameters in model output from the NOAA Nomads server:
 
        ncks -v tmp2m,dpt2m,rh2m,apcpsfc,cfrzrsfc OpenDap-Model-URL outputfile.nc
 
@@ -37,16 +37,16 @@ Download model data with the ncks command. The following command will download t
 
         ncks -d lat,20.0,60.0 -d lon,210.0,310.0 -v tmp2m,dpt2m,rh2m,apcpsfc,cfrzrsfc OpenDap-Model-URL outputfile.nc
 
-Run the LCR script on the downloaded model data file. Run the following command to calculate LCR and BFP from the downloaded data:
+4.) Run the LCR script on the downloaded model data file. Run the following command to calculate LCR and BFP from the downloaded data:
 
        ncap2 -4 -S lcr.nco downloaded-model-data-file.nc outputfile-lcr.nc
 
     downloaded-model-data-file.nc is the outputfile.nc from the previous download step, 
     outputfile-lcr.nc here is the final file containing the LCR and BFP calculations.
 
-Use the data viewer of your choice to generate charts from the resulting file. The free software McIDAS is a good way to generate charts of the resulting data. Choose the "color shaded plan view" and download the XML files to import the color scale for LCR or BFP, and set the scale range from 0 to 12 for LCR or 0 to 0.1 for BFP.
+5.) Use the data viewer of your choice to generate charts from the resulting file. The free software McIDAS is a good way to generate charts of the resulting data. Choose the "color shaded plan view" and download the XML files to import the color scale for LCR or BFP, and set the scale range from 0 to 12 for LCR or 0 to 0.1 for BFP.
 
-To generate Day 1 and Day 2 forecast charts: The ncwa command generates a new .nc file containing maximum LCR or BFP values over a specified time period.
+6.) To generate Day 1 and Day 2 forecast charts: The ncwa command generates a new .nc file containing maximum LCR or BFP values over a specified time period.
 
         ncwa -v lcr -d time,startframe,endframe -a time -y max inputfile-lcr.nc outputfile-lcrmax.nc
 
