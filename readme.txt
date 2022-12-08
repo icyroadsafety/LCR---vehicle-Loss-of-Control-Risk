@@ -1,6 +1,6 @@
 ****************************************************
 * LCR (vehicle Loss-of-Control Risk) script documentation
-* Current version 1.1 updated Dcember 7, 2022
+* Current version 1.1 updated December 7, 2022
 * All downloads: http://icyroadsafety.com/lcr/
 ****************************************************
 
