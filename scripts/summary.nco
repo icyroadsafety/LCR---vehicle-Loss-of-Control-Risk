@@ -1,0 +1,71 @@
+// Aurthour: Henry Butowsky
+// Date:     2023-10-17
+// usage:   ncap2 -v -S summary.nco file.nc out.nc
+// Function :   
+//           prints summary information for vars with three or more dimensions and of type NC_FLOAT or NC_DOUBLE
+
+
+// The regular NCO attribute definition is var_nm@all_nm - but if "var_nm" is missing 
+// then it is defaulted  to "global" 
+// This  function reads in all vars in Input and ouptuts them as a ragged array
+// which is in NetCDF lingo is a NC_STRING att
+// to see  the NC_STRING att the ouptut file type must be NetCDF-4
+@all=get_vars_in();
+
+*sz=@all.size();
+
+
+for(*idx=0;idx<sz;idx++)
+{
+
+  // To use an atrribute as a "pointer" - it must be a text type (NC_CHAR and NC_STRING) -The text it contains is 
+  // a var name or an att name -  by prefixing this att with a '*' we are saying "treat me as a variable" 
+  // the '*' has the highest presedence of the operators in NCAP2 so for example
+  //  *global@var_nm.total() is equivalent to (*global@var_nm).total() 
+  @var_nm=@all(idx);
+
+  if(*@var_nm.ndims()>=3 && (*@var_nm.type()== NC_FLOAT || *@var_nm.type()== NC_DOUBLE) )
+  {
+    // The push function also takes a call-by-ref att -if it  doesnt already exist then it is created
+    // the call below is pushing a NC_STRING to an att so the end result is a list of NC_STRINGS   
+    push(&@prc,@var_nm); 
+  }
+
+} 
+
+
+*sz=@prc.size();
+
+
+for(*idx=0;idx<sz;idx++)
+{
+  @var_nm=@prc(idx);
+
+  // we can work with att pointers as well 
+  // sprint - ouptut is of type NC_CHAR
+  @att_avg=sprint(@var_nm,"%s@total"); 
+  @att_range=sprint(@var_nm,"%s@range"); 
+ 
+  *@att_avg= *@var_nm.avg();
+  *@att_range={ min(*@var_nm), max(*@var_nm)}; 
+
+  @num_missing= *@var_nm.number_miss();
+
+
+  if (*@var_nm.type()== NC_FLOAT)
+      @num_zeros =  (*@var_nm==0.0f).total();
+  else if (*@var_nm.type()== NC_DOUBLE)
+      @num_zeros = (*@var_nm==0.0).total();
+
+
+  // print var summary  
+  print(@var_nm,"%s\n");
+  print(*@var_nm.avg()," avg=%f\n");
+  print(*@var_nm.min()," min=%f\n");
+  print(*@var_nm.max()," max=%f\n");
+  print( *@var_nm.number_miss(), " num missing=%d\n");
+  print(@num_zeros," num_zeros=%.0f\n");
+
+
+} 
+
