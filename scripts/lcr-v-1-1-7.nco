@@ -13,7 +13,7 @@
 
 // check the required variables
 if( !( exists(apcpsfc) && exists(cfrzrsfc) &&  exists(csnowsfc) && exists(gustsfc) && exists(rh2m) &&  exists(tmp2m) )) {
-  print("This script expects the following variables:\n");
+    print("This script expects the following variables:\n");
     print("apcpsfc, cfrzrsfc, csnowsfc, gustsfc, rh2m, tmp2m.\n"); 
     print("some are missing.\n");
     exit(1);
@@ -71,6 +71,16 @@ snowsfc@long_name="**1-hour snowfall [inches]";
 bfp=ipf;
 bfp@units="inches";
 bfp@long_name="**BFP - Precipitation in surface temperature at or below-freezing [inches]";
+
+nfp=ipf;
+nfp@units="inches";
+nfp@long_name="**NFP - Precipitation in surface temperatures between 32F and 38F [inches]";
+
+afp=ipf;
+afp@units="inches";
+afp@long_name="**AFP - Precipitation in surface temperatures above 38F [inches]";
+
+
 
 
 
@@ -234,6 +244,18 @@ if(DO_LCR==1)
   where (surfacetemp > 32f)
     bfp = 0.0f;
 
-}
+
+// Set below-32F and above-38F NFP gridpoints to zero so there is
+// no NFP plotted where temps are below 32F or above 38F
+  where (surfacetemp <= 32f || surfacetemp > 38f )
+    nfp = 0.0f;
+
+// Set below-38F AFP gridpoints to zero so there is
+// no AFP plotted where temps are below 38F
+  where (surfacetemp <= 38f)
+    afp = 0.0f;
+
+  
+ }
 
 
