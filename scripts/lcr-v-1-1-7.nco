@@ -11,68 +11,67 @@
 *CELSIUSTOFAHRENHEIT=1;
 *DO_LCR=1;
 
+// check the required variables
+if( !( exists(apcpsfc) && exists(cfrzrsfc) &&  exists(csnowsfc) && exists(gustsfc) && exists(rh2m) &&  exists(tmp2m) )) {
+  print("This script expects the following variables:\n");
+    print("apcpsfc, cfrzrsfc, csnowsfc, gustsfc, rh2m, tmp2m.\n"); 
+    print("some are missing.\n");
+    exit(1);
+ }
+
 
 // do all calculations in Celsius
 // Convert from kelvin to Celsius
 // then later to Fahrenheit  
-if(exists(tmp2m)){
-   surfacetemp=tmp2m-273.15f;
-   surfacetemphist=surfacetemp;           
-   surfacetemphist(1:,:,:)=( surfacetemp(0:-2,:,:) + surfacetemp(1:,:,:) )/2.0f;  
-   surfacetemphist@long_name="**6-hour 2m surface temperature history";
-}
-if(exists(rh2m)){
-    surfacerh=rh2m;
-    surfacerh@units="%";
-    surfacerh@long_name="**2m humidity";
-}
+surfacetemp=tmp2m-273.15f;
+surfacetemphist=surfacetemp;           
+surfacetemphist(1:,:,:)=( surfacetemp(0:-2,:,:) + surfacetemp(1:,:,:) )/2.0f;  
+surfacetemphist@long_name="**6-hour 2m surface temperature history";
 
-if(exists(csnowsfc)){
-    snptype=csnowsfc;
-    snptype@units="present";
-    snptype@long_name="**Snow precipitation type";
-}
 
-if(exists(cfrzrsfc)){
-    zrptype=cfrzrsfc;
-    zrptype@units="present";
-    zrptype@long_name="**Freezing rain precipitation type";
-}
-if(exists(gustsfc)){
-    surfacewind=gustsfc * 2.237f;
-    surfacewind@units="mph";
-    surfacewind@long_name="**Surface wind";
-}
+surfacerh=rh2m;
+surfacerh@units="%";
+surfacerh@long_name="**2m humidity";
+
+snptype=csnowsfc;
+snptype@units="present";
+snptype@long_name="**Snow precipitation type";
+
+
+zrptype=cfrzrsfc;
+zrptype@units="present";
+zrptype@long_name="**Freezing rain precipitation type";
+
+surfacewind=gustsfc * 2.237f;
+surfacewind@units="mph";
+surfacewind@long_name="**Surface wind";
+
 
 // total precipitation
-if(exists(apcpsfc))
-{
-  qpf= apcpsfc * 0.039370f; 
-  qpf@units="inches";
-  ipf@long_name="**Accumulated precipitation [inches]";
+qpf= apcpsfc * 0.039370f; 
+qpf@units="inches";
+ipf@long_name="**Accumulated precipitation [inches]";
 
 // make fresh copy of variables
-  ipf=qpf;
-    // decumulate - subtract from each step the previous step
-  ipf(1:,:,:)=qpf(1:,:,:) - qpf(0:-2,:,:);
-  ipf@units="inches";
-  ipf@long_name="**1-hour precipitation [inches]";
+ipf=qpf;
+// decumulate - subtract from each step the previous step
+ipf(1:,:,:)=qpf(1:,:,:) - qpf(0:-2,:,:);
+ipf@units="inches";
+ipf@long_name="**1-hour precipitation [inches]";
 
 // 1-hour snowfall based on 10 to 1 ratio
-  snowsfc=ipf * 10;
-  snowsfc@units="inches";
-  snowsfc@long_name="**1-hour snowfall [inches]";
+snowsfc=ipf * 10;
+snowsfc@units="inches";
+snowsfc@long_name="**1-hour snowfall [inches]";
 
 
-}
+
 
 // Assign BFP
-if(exists(apcpsfc))
-{
-  bfp=ipf;
-  bfp@units="inches";
-  bfp@long_name="**BFP - Precipitation in surface temperature at or below-freezing [inches]";
-}
+bfp=ipf;
+bfp@units="inches";
+bfp@long_name="**BFP - Precipitation in surface temperature at or below-freezing [inches]";
+
 
 
 // calculate dew point
@@ -91,10 +90,8 @@ else
 
 // calculate wet bulb temperature
 // keep it as double for now ?
-if(exists(surfacetemp))
-{
   
-  surfacewb = surfacetemp * atan(0.151977 * (surfacerh + 8.313659)^0.5)
+surfacewb = surfacetemp * atan(0.151977 * (surfacerh + 8.313659)^0.5)
                + atan(surfacetemp + surfacerh)
                - atan(surfacerh - 1.676331)
                + 0.00391838 * (surfacerh)^1.5 * atan(0.023101 * surfacerh)
@@ -102,7 +99,7 @@ if(exists(surfacetemp))
 
 
   
-}
+
   
 if(DBG==1){
   surfacedbg=surfacewb.float()-surfacetemp;
