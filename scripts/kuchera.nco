@@ -1,0 +1,32 @@
+/*******************************************************
+* Calculate Kuchera ratio
+*
+* usage ncap2 -4  -A  -S scripts/kuchera.nco in.nc out.nc
+*******************************************************/
+
+*DBG=1;
+
+// Retrieve maximum temperature below 500mb
+if(exists(tmpprs)){
+   maxtemp=tmpprs;
+   maxtemp@units="Kelvin";           
+   maxtemp@long_name="**1000mb to 500mb maximum temperature";
+}
+
+kucheraratio=tmpprs;
+kucheraratio@units="ratio";
+kucheraratio@long_name="Kuchera ratio";
+
+
+// calculate Kuchera ratio
+where(maxtemp>271.16f)
+  kucheraratio = 12f + 2f * (271.16f - maxtemp);
+elsewhere
+  kucheraratio = 12f + (271.16f - maxtemp);
+
+// Set Kuchera ratio to zero where ratio is negative
+where(kucheraratio<0.0f)
+  kucheraratio = 0f;
+
+
+

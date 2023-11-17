@@ -1,0 +1,331 @@
+/*******************************************************
+* Version 1.2 Beta
+* calculates lcr 
+* renames variables 
+* modifies units 
+*
+* usage ncap2 -4  -A  -S scripts/lcr-v-1-2.nco in.nc out.nc
+*******************************************************/
+
+*DBG=1;
+*CELSIUSTOFAHRENHEIT=1;
+*DO_LCR=1;
+
+
+// do all calculations in Celsius
+// Convert from kelvin to Celsius
+// then later to Fahrenheit  
+if(exists(tmp2m)){
+   surfacetemp=tmp2m-273.15f;
+   surfacetemphist=surfacetemp;           
+   surfacetemphist(1:,:,:)=( surfacetemp(0:-2,:,:) + surfacetemp(1:,:,:) )/2.0f;  
+   surfacetemphist@long_name="**6-hour 2m surface temperature history";
+}
+if(exists(rh2m)){
+    surfacerh=rh2m;
+    surfacerh@units="%";
+    surfacerh@long_name="**2m humidity";
+}
+
+if(exists(csnowsfc)){
+    snptype=csnowsfc;
+    snptype@units="present";
+    snptype@long_name="**Categorical snow precipitation type";
+}
+else
+{
+  // set snptype to zero if categorical snow data doesn't exist. 
+  // snptype will be set in asnowsfc section below if snowfall
+  // amounts are greater than zero.
+snptype=0f;
+}
+
+if(exists(cfrzrsfc)){
+    zrptype=cfrzrsfc;
+    zrptype@units="present";
+    zrptype@long_name="**Categorical freezing rain precipitation type";
+}
+if(exists(gustsfc)){
+    surfacewind=gustsfc * 2.237f;
+    surfacewind@units="mph";
+    surfacewind@long_name="**Surface wind gusts";
+}
+
+// total precipitation
+if(exists(apcpsfc))
+{
+  qpf= apcpsfc * 0.039370f; 
+  qpf@units="inches";
+  qpf@long_name="**Accumulated precipitation [inches]";
+
+  // make fresh copy of variables
+  ipf=qpf;
+  // decumulate - subtract from each step the previous step
+  ipf(1:,:,:)=qpf(1:,:,:) - qpf(0:-2,:,:);
+  ipf@units="inches";
+  ipf@long_name="**1-hour precipitation [inches]";
+}
+
+// Determine if the more accurate asnowsfc variable is present. If yes, decumulate it. 
+// If no, use either Kuchera ratio or 10:1 ratio to set 1-hour snowfall amounts. 
+// Final 1-hour snowfall variable used for LCR calculation in all cases is snowsfc.
+if(exists(asnowsfc))
+{
+  sqpf= asnowsfc * 39.37f;
+  sqpf@units="inches";
+  sqpf@long_name="**Accumulated snowfall [inches]";
+
+    // make fresh copy of variables
+  sipf=sqpf;
+    // decumulate - subtract from each step the previous step
+  sipf(1:,:,:)=sqpf(1:,:,:) - sqpf(0:-2,:,:);
+  sipf@units="inches";
+  sipf@long_name="**1-hour snowfall [inches]";
+  snowsfc=sipf;
+    // Ensure that categorical precip type is set to snow if asnowsfc value is greater than zero
+  where (sipf>0f)
+       snptype=1f;
+}
+else
+{
+    // If asnowsfc does not exist, then calculate 1-hour snowfall based on either Kuchera or 10:1 ratios
+    if(exists(kucheraratio))
+    {
+    // Set 1-hour snowfall based on Kuchera ratio if kucheraratio variable exists
+      snowsfc=ipf * kucheraratio;
+      snowsfc@units="inches";
+      snowsfc@long_name="**1-hour snowfall [inches]";
+    }
+    else
+    {
+    // Set 1-hour snowfall based on less-reliable 10 to 1 ratio,
+    // used only if both kucheraratio and asnowsfc variables do not exist
+      snowsfc=ipf * 10f;
+      snowsfc@units="inches";
+      snowsfc@long_name="**1-hour snowfall [inches]";
+    }
+}
+
+
+// Assign BFP, NBFP and AFP, below freezing, near-freezing and above freezing precipitation variables
+if(exists(apcpsfc))
+{
+  bfp=ipf;
+  bfp@units="inches";
+  bfp@long_name="**BFP - Precipitation in surface temperatures at or below-freezing [inches]";
+  nfp=ipf;
+  nfp@units="inches";
+  nfp@long_name="**NFP - Precipitation in surface temperatures between 32F and 38F [inches]";
+  afp=ipf;
+  afp@units="inches";
+  afp@long_name="**AFP - Precipitation in surface temperatures above 38F [inches]";
+}
+
+// Assign total cloud cover variable
+if(exists(tcdcclm)){
+    cloudcover=tcdcclm;
+    cloudcover@units="percent";
+    cloudcover@long_name="**Cloud cover";
+}
+else
+{
+    // Set cloud cover to 100 if this variable does not exist,
+    // so it does not trigger the frost icing LCR limit
+    cloudcover = 100f;
+}
+
+// Assign maximum surface wind gust variable
+if(exists(gustsfc)){
+    surfacewind=gustsfc * 2.237f;
+    surfacewind@units="mph";
+    surfacewind@long_name="**Surface wind maximum gusts";
+}
+
+
+// calculate dew point
+if(exists(dpt2m))
+{
+  // convert from Kelvin to Celsius
+  surfacedp=dpt2m-273.15f;
+}
+else
+{
+  // calculate dew point using 1980 Bolton formula - (celsius)
+  surfacedp=surfacerh/100.0f* 6.112f*exp( (17.67f*surfacetemp) / (surfacetemp+243.5f));
+  
+ }
+  
+
+// calculate wet bulb temperature
+// keep it as double for now ?
+if(exists(surfacetemp))
+{
+  
+  surfacewb = surfacetemp * atan(0.151977 * (surfacerh + 8.313659)^0.5)
+               + atan(surfacetemp + surfacerh)
+               - atan(surfacerh - 1.676331)
+               + 0.00391838 * (surfacerh)^1.5 * atan(0.023101 * surfacerh)
+               - 4.686035;
+
+
+  
+}
+  
+if(DBG==1){
+  surfacedbg=surfacewb.float()-surfacetemp;
+  surface@units="celsius";
+  surfacedbg@long_name="** debug wbc  wbc-Temp  [C]";
+ }
+
+
+// Convert from C to F
+if(CELSIUSTOFAHRENHEIT==1)
+{
+   surfacetemp=surfacetemp*1.8f+32.0f;  
+   surfacetemp@units="fahrenheit";
+   surfacetemp@long_name="** 2 m above ground surface temperature [F] ";
+
+   surfacedp=surfacedp*1.8f+32.0f;  
+   surfacedp@units="fahrenheit";
+   surfacedp@long_name="** 2 m above ground dew point temperature -  [F]";
+
+   surfacewb=surfacewb*1.8f+32.0f;  
+   surfacewb@units="fahrenheit";
+   surfacewb@long_name="** 2 m above ground wet bulb  temperature - custom calculation [F]";
+  
+}
+else
+{
+
+   surfacetemp@units="celsius";
+   surfacetemp@long_name="** 2 m above ground surface temperature [C] ";
+
+   surfacedp@units="celsius";
+   surfacedp@long_name="** 2 m above ground dew point temperature -  [C]";
+
+   surfacewb@units="celsius";
+   surfacewb@long_name="** 2 m above ground wet bulb  temperature - custom calculation [C]";
+
+ }
+   
+
+
+if(DO_LCR==1)
+{  
+
+  lcr[time,lat,lon]=0.0f;
+  lcron[time,lat,lon]=0.0f;
+
+// Set Baseline LCR from 1 to 4 based on 1-hour precipitation amounts
+// when temperatures are near or below freezing
+
+   // Baseline LCR designations if precip type is anything other than snow
+  where  (ipf > 0.0f && ipf < 0.1f && surfacetemp <= 38f && surfacewb <= 34f && snptype == 0f){
+    lcr = 1f;
+    lcron = 1f;
+}
+
+  where  (ipf >= 0.1f && ipf < 0.25f && surfacetemp <= 36f && surfacewb <= 33f && snptype == 0f){
+    lcr = 2f;
+    lcron = 1f;
+}
+
+  where  (ipf >= 0.25f && ipf < 0.5f && surfacetemp <= 36f && surfacewb <= 33f && snptype == 0f){
+    lcr = 3f;
+    lcron = 1f;
+}
+
+  where  (ipf >= 0.5f && surfacetemp <= 36f && surfacewb <= 33f && snptype == 0f){
+    lcr = 4f;
+    lcron = 1f;
+}
+
+   // Baseline LCR designations if precip type is snow
+  where  (snowsfc > 0.0f && snowsfc < 0.5f && surfacetemp <= 38f && surfacewb <= 34f && snptype > 0f){
+    lcr = 1f;
+    lcron = 1f;
+}
+
+  where  (snowsfc >= 0.5f && snowsfc < 1f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
+    lcr = 2f;
+    lcron = 1f;
+}
+
+  where  (snowsfc >= 1f && snowsfc < 3f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
+    lcr = 3f;
+    lcron = 1f;
+}
+
+  where  (snowsfc >= 3f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
+    lcr = 4f;
+    lcron = 1f;
+}
+
+// Incremental LCR factors: these each add to the baseline LCR value if true
+
+// Below-freezing temperature factor: add 1 if surface temp is at or below freezing
+  where (lcron == 1f && (surfacetemp <= 32f || zrptype > 0f))
+    lcr = lcr + 1f;
+     
+// Below-freezing temperature history factor: add 1 if temps have been below freezing for 6 hours
+  where (lcron == 1f && surfacetemphist < 0f)
+    lcr = lcr + 1f;
+
+// Temperature sweet spot factor: Add 2 if temp is between 24 and 29 degrees F
+  where (lcron == 1f && ((surfacetemp >= 24f) || (zrptype > 0f)) && surfacetemp <= 29f)
+    lcr = lcr + 2f;
+
+// Freezing rain or freezing drizzle factor: add 2 if ptype is freezing rain
+  where  (lcron == 1f && zrptype > 0f)
+    lcr = lcr + 2f;
+
+// Wind factor: add 1 if wind gusts are over 20mph and LCR is at 5 or above
+  where  (lcron == 1f && surfacewind >= 20f && lcr >= 5f)
+    lcr = lcr + 1f;
+
+// Reduced de-icing capacity of southern USA factor: increase LCR with farther south latitude
+  where (lcron == 1f && (lat <= 35f && lat >= -35f))
+    lcr = lcr + 1f;
+
+  where (lcron == 1f && (lat <= 34f && lat >= -34f))
+    lcr = lcr + 1f;
+
+  where (lcron == 1f && (lat <= 33f && lat >= -33f))
+    lcr = lcr + 1f;
+
+// Freezing fog factor: Designate LCR during high humidity and below freezing temps
+  where (lcron =! 1f && surfacerh > 92f && surfacetemp <= 31f)
+    lcr = 1f;
+
+  where (lcron =! 1f && surfacerh > 98f && surfacetemp <= 29f)
+    lcr = 2f;
+
+  where (lcron =! 1f && surfacerh > 99f && surfacetemp <= 27f)
+    lcr = 3f;
+
+// Set above-freezing BFP gridpoints to zero so there is 
+// no BFP plotted where temps are above freezing
+  where (surfacetemp > 32f)
+    bfp = 0.0f;
+
+// Set below-32F and above-38F NFP gridpoints to zero so there is 
+// no NFP plotted where temps are below 32F or above 38F
+  where (surfacetemp <= 32f)
+    nfp = 0.0f;
+
+  where (surfacetemp > 38f)
+    nfp = 0.0f;
+
+// Set below-38F AFP gridpoints to zero so there is 
+// no AFP plotted where temps are below 38F
+  where (surfacetemp <= 38f)
+    afp = 0.0f;
+
+// Limit LCR to 3 when skies are clear, used to show 
+// frost icing potential when no precipitation is present
+  where (lcr > 3f && cloudcover < 10f)
+    lcr = 3f;
+
+}
+
+
