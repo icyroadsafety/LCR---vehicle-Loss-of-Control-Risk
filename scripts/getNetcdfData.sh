@@ -18,9 +18,10 @@ DEBUG=0;
 serverpath=$1;
 fullfilename=$2;
 type=$3
+
+model=$5
+
 dtime="";
-
-
 # nb last arg in command line 
 case $4 in
 large) dtime="-d time,0,23"
@@ -32,7 +33,7 @@ medium) dtime="-d time,0,18"
 small) dtime="-d time,0,6"
 ;;
 
-tst) dtime="-d time,0,1"
+tst) dtime="-d time,0,1 -d lat,20,21 -d lon,0,4"
 ;;     
     
 
@@ -42,22 +43,49 @@ esac
 
 if [ "$DEBUG" -gt 0  ];then
    wget_flags="-nv"
-   ncks_flags="-D 5 -O"
+   ncks_flags="-D 2 -O"
  else
    wget_flags="-q"
    ncks_flags="-O"
 fi   
 
+# use this variable to set the attribute  global@NoaaType
+NoaaType=0
 
+case $model in
+    
+    gfs)
+     lcr3vars="apcpsfc,cfrzrsfc,csnowsfc,gustsfc,tcdcclm,dpt2m,rh2m,tmp2m";
+     NoaaType=1  	
+     ;;
 
+    nam | nam1hr | nam_conusnet)
+    lcr3vars="apcpsfc,cfrzrsfc,csnowsfc,gustsfc,tcdcclm,dpt2m,rh2m,tmp2m";
+    NoaaType=2  	  	
+     ;;
 
-lcr3vars="apcpsfc,asnowsfc,cfrzrsfc,csnowsfc,gustsfc,tcdcclm,dpt2m,rh2m,tmp2m";
+   hrrr)
+    lcr3vars="apcpsfc,asnowsfc,cfrzrsfc,csnowsfc,gustsfc,tcdcclm,dpt2m,rh2m,tmp2m";
+    NoaaType=3  	  	
+     ;;
+
+   
+    *)
+    lcr3vars="apcpsfc,cfrzrsfc,csnowsfc,gustsfc,tcdcclm,dpt2m,rh2m,tmp2m";
+    NoaaType=0
+     ;;  	
+
+esac    
 
 
 
 #deal with nc file here
-if [ "$type" = "nc" ];then 
-   ncks -4 -L 1  $ncks_flags  $dtime -v $lcr3vars $serverpath $fullfilename;
+if [ "$type" = "nc" ];then
+    
+   CMD="ncks -4 -L 1  $ncks_flags  $dtime -v $lcr3vars $serverpath $fullfilename";
+   [ $DEBUG -gt 0 ] && echo "$CMD"
+   # do command
+   $CMD
    
    if [ ! -e $fullfilename ]; then 
     exit 1  
@@ -68,11 +96,10 @@ if [ "$type" = "nc" ];then
     exit 1  
   fi
 
-  # rename ww3 vars back to ww2 vars   
-  # ncrename $rename_string $fullfilename;
   
-  # as download files has _FillValue and missing_value - delete the latter
-  ncatted -a missing_value,,d,, $fullfilename;
+  # delete missing_value as _FillValue is present
+  # set global@NoaaType  
+  ncatted -a missing_value,,d,, -a NoaaType,global,c,i,"$NoaaType" $fullfilename;
 
   exit 0;  
 fi
