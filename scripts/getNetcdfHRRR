@@ -18,20 +18,22 @@ gfsTimeDelay = 300 # minutes after initial time before grib2 becomes available.
 
 
 scriptName=os.path.basename(__file__);
-lcrBase = "/home/ubuntu/lcr"
-lcrCacheBase = "/home/ubuntu/lcr"
-lcrLogBase = "/home/ubuntu/lcr/log"
 
+lcrBase = "/projects/me/ICY/lcr"
 
+lcrLogBase =  path.join(lcrBase, "log")
+lcrBinPath = path.join(lcrBase, "scripts")
 
-lcrBinPath = path.join(lcrBase, "bin")
-gfsPath = path.join(lcrCacheBase, "hrrr_nc_data")
+logFile = path.join(lcrLogBase, "hrrr-download.log")
+log=open(logFile,"a")
+
+gfsPath = path.join(lcrBase, "hrrr_nc_data")
 
 nomadsServer = "http://nomads.ncep.noaa.gov:80"
 hrrrRemotePath = "/dods/hrrr"
-logFile = path.join(lcrLogBase, "hrrr-download.log")
 
-log=open(logFile,"a")
+
+
 
 bVerbose=0
 
@@ -144,7 +146,7 @@ def getRemoteContent(iDate,ext,numProc=1):
 
   shellCMD= path.join(lcrBinPath,"getNetcdfData.sh")   
   
-  fullCMD = "{0} {1} {2} {3} {4}".format(shellCMD, fullRemotePath, fullLocalPath,ext,"small")
+  fullCMD = "{0} {1} {2} {3} {4} {5}".format(shellCMD, fullRemotePath, fullLocalPath,ext,"small", "hrrr")
 
   ret=os.system(fullCMD);
   
