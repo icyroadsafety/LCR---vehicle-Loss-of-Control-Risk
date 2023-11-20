@@ -1,0 +1,264 @@
+#!/usr/bin/python3
+import os, sys, errno, time, argparse, re, calendar, itertools as it
+import multiprocessing as mp
+from joblib import Parallel, delayed
+from os import path as path
+from time import gmtime, mktime
+import datetime
+from datetime import date, timedelta
+import glob
+import re
+
+#----------------------------------------------------------------------
+# getGFS - launches the download of a set of grib2 files
+
+rHourList = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
+fcHourList = [6, 12, 18, 24, 30, 36, 42, 48, 54,60,66, 72]
+gfsTimeDelay = 300 # minutes after initial time before grib2 becomes available.
+
+
+scriptName=os.path.basename(__file__);
+lcrBase = "/home/ubuntu/lcr"
+lcrCacheBase = "/home/ubuntu/lcr"
+lcrLogBase = "/home/ubuntu/lcr/log"
+
+
+
+lcrBinPath = path.join(lcrBase, "bin")
+gfsPath = path.join(lcrCacheBase, "hrrr_nc_data")
+
+nomadsServer = "http://nomads.ncep.noaa.gov:80"
+hrrrRemotePath = "/dods/hrrr"
+logFile = path.join(lcrLogBase, "hrrr-download.log")
+
+log=open(logFile,"a")
+
+bVerbose=0
+
+##############################################################################################################
+def mkdate(datestr):
+    return datetime.datetime.strptime(datestr, '%Y-%m-%d')
+
+def getGFSTimeABS(gfsStart, fcHour):
+    gfsTimeABS = gfsStart + timedelta(hours=fcHour)
+    return gfsTimeABS
+
+def getGFSTimeEpoch(gfsDateTime):
+#    print gfsDateTime
+    gfsTimeEpoch = calendar.timegm(gfsDateTime.timetuple())
+    return gfsTimeEpoch
+
+#####
+# This one is the epoch used to distinguish seemingly duplicate file names; NOT to be confused with GFSTimeEpoch.
+def epochVal(gH):
+    if (gH < 4): gH += 24
+    return (((gH -4) / 6) * 6 + 4)
+
+#####
+# Return the most-recent GFS Date-Hour of grib2 file that *should* be available,
+# or return GFS Date-Hour specified by --rdate --rhour, rounded to earlier run if needed ...
+def latestGFSStart(dt=None, hr=None):
+    if (dt == None): dt = datetime.fromtimestamp(mktime(gmtime()))
+    if (hr == None): hr = dt.hour
+    ### @note: this works assuming gfsTimeDelay < 6 hours ...
+    gfsStartDate = datetime.datetime.now() - timedelta(minutes=gfsTimeDelay)
+    gfsStartHour = max([h for h in rHourList if h <= gfsStartDate.hour])
+    gfsStart = datetime.datetime.combine(gfsStartDate, datetime.time(gfsStartHour))
+    pStart = datetime.datetime.combine(dt, datetime.time(hr))
+    if (pStart < gfsStart):
+        return pStart
+    else:
+        return gfsStart
+
+
+def logWrite(sMessage):
+     d1=datetime.datetime.now()
+     d1.replace(microsecond=0)         
+
+     
+     sText="%s(%s): %s"%(scriptName,d1.strftime("%m-%d %H:%M"), sMessage)
+     bVerbose and print(sText)
+
+     log.write(sText+"\n")       
+  
+       
+# return datetime object of latest download
+def latestGoodDownload():
+    # flist=glob.glob(gfsPath+"/hrrr_sfc.r??????????.nc")
+    fList=glob.glob(gfsPath+"/hrrr_sfc.r[0-9]*.nc")
+    fList.sort()
+
+    
+    if( len(fList) >0):
+       # name of the form gfs.0p50.2015040500.nc     
+       # we just want the date+hour    
+       fname=os.path.basename(fList.pop());
+       sT=fname.split(".")[1] 
+       # remove the r
+       sT=sT[1:]
+       # lDate=datetime.datetime.utcfromtimestamp(float(sT))
+       lDate=datetime.datetime.strptime(sT,"%Y%m%d%H")
+       return lDate  
+    else:
+       return None;       
+
+def listTodayYesterday():
+     listDates=[]
+     Today=datetime.datetime.today();
+     Today=Today.replace(hour=0,minute=0,second=0,microsecond=0)
+     Yesterday=Today-timedelta(days=1)
+     Dbyday=Today-timedelta(days=2)      
+
+     for rH in rHourList:  
+       listDates.append( Today+timedelta(hours=rH) )    
+       listDates.append(Yesterday+timedelta(hours=rH) );
+       listDates.append(Dbyday+timedelta(hours=rH) );
+
+     listDates.sort()
+     listDates.reverse()    
+     # print listDates
+     return listDates;   
+
+# finds latest live gfs data on the server
+# does this by check for existance of a .das file 
+def getRemoteContent(iDate,ext,numProc=1):
+  
+  sDate=iDate.strftime("%Y%m%d"); # string of date
+  sHour=iDate.strftime("%H");     # string of hour  
+
+  fullRemotePath=nomadsServer+hrrrRemotePath+"/hrrr"+sDate+"/hrrr_sfc.t"+sHour+"z";
+  # only append ext if not nc
+  if( ext != "nc" ):
+    fullRemotePath += "."+ext;
+
+  # fullLocalPath=gfsPath+"/gfs.0p50."+sDate+sHour+"."+ext;
+  epochSeconds=time.mktime(iDate.timetuple())
+  
+  fullLocalPath= "{}/hrrr_sfc.r{}{}.{}".format(gfsPath,sDate,sHour, ext)
+  
+  # this string is used by ncl to rebase the time coo-rdinates
+  # from "days since 1-1-1" to "hours since filetimestamp
+  time_units2="hours since {0}".format(iDate.strftime("%Y-%m-%d %H:00"))
+
+ 
+
+  shellCMD= path.join(lcrBinPath,"getNetcdfData.sh")   
+  
+  fullCMD = "{0} {1} {2} {3} {4}".format(shellCMD, fullRemotePath, fullLocalPath,ext,"small")
+
+  ret=os.system(fullCMD);
+  
+  if(ret==0 and os.path.isfile(fullLocalPath) ):
+    return os.path.basename(fullLocalPath);
+  else:
+    return None;   
+
+# rebase the lon co-ordinate var from 0.0/355.0  to -180/179.5
+def rebaseLocalContent(fullName):
+
+   # fullName=gfsPath+"/"+localName
+   shellCMD= lcrBinPath+"/lon360TO180.sh"
+   shellCMD+= " "+ fullName
+   ret=1
+
+   if( os.path.isfile(fullName)):
+      if (os.system(shellCMD)==0): 
+        logWrite("Have rebased the lon coordinate of the file  {0} ".format(fullName))                        
+   else:
+      logWrite("unable to locate the file {0} ".format(fullName))                        
+
+  
+   return 0;
+
+ 
+##############################################################################################################
+__prog__ = path.splitext(path.basename(__file__))[0]
+__version__ = "0.0.42-01"
+parser = argparse.ArgumentParser(prog=__prog__,
+    description='Launch the download jobs for a set of GFS grib2 files.  Most-recent run-date and run-hour are launched by default.',
+    formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=42,width=120))
+parser.add_argument('--background', action='store_true', help='launch downloads in background (daemonize) ')
+parser.add_argument('--dryrun', action='store_true', help="show command stream but don't execute it")
+parser.add_argument('-f', '--fchour', nargs='+', type=int, choices=fcHourList, help='limit downloading to specified forecast-hour(s)')
+parser.add_argument('-j', '--jobs', nargs='?', type=int, default=4, help='number of paralel processes')
+parser.add_argument('-q', '--quiet', action='store_true', help='silent as the grave')
+parser.add_argument('--rdate', nargs='?', type=mkdate, help='download grib2 files for specified run-date(s)')
+parser.add_argument('--rhour', nargs='?', type=int, choices=rHourList, help='download grib2 files fpr specified run-hour(s)')
+parser.add_argument('--skip-download', action='store_true', help='assume data already downloaded; just launch the render-and-slice process.')
+parser.add_argument('--skip-processing', action='store_true', help='do NOT launch the render-and-slice process after download.')
+parser.add_argument('-v', '--verbose', action='count', default=0, help='blather-on ...')
+parser.add_argument('-V', '--version', action='version', version='%(prog)s  (version {0})'.format(__version__), help='print version info.')
+##############################################################################################################
+if __name__ == '__main__':
+    os.nice(20) # Be VERY nice!
+
+    args = parser.parse_args()
+
+#    print(args)
+    bDaemon = args.background
+    bDryRun = args.dryrun
+    pfcHour = args.fchour or fcHourList
+    parallelJobCount = args.jobs
+    bQuiet = args.quiet
+    pDate = args.rdate
+    if (pDate == None): pDate = gmtime()
+    rDate = datetime.datetime.fromtimestamp(mktime(pDate))
+    rHour = args.rhour
+    if (rHour == None): rHour = rDate.hour
+    bSkipProcessing = args.skip_processing
+    bSkipDownload = args.skip_download
+    bVerbose = args.verbose
+    if (bVerbose): bQuiet = False
+
+    #its best to be located in the gfs_data directory as in the shell script there is wget 
+    # which creates a local file in the cwd- which is later renamed with an absolute filename
+    os.chdir(gfsPath)
+
+
+    # date of last good download 
+    dateLastGood=latestGoodDownload();
+
+    
+    # listDates is in reverse order by date    
+    listDates=listTodayYesterday();
+
+    dateServer=None  
+    dasfileName=None
+    # find first good date     
+    for d1 in listDates:
+       dasfileName=getRemoteContent(d1,"das")    
+       if ( dasfileName ):            
+         dateServer=d1;
+         os.remove(dasfileName);
+         break; 
+
+       
+    logWrite( "/***************** Starting hrrr_sfc download script ***********************/")     
+    if(dateLastGood):   
+      logWrite( "Last good download %s"% (dateLastGood.strftime("%Y/%m/%d %H:%M")) )               
+    
+    if(dateServer):
+       logWrite( "Latest hrrr_sfc file on server is dated %s"% (dateServer.strftime("%Y/%m/%d %H:%M")) )    
+    else:
+       logWrite("No hrrr_sfc content from the last 48 hours found on server." )          
+       sys.exit(1)  
+
+
+    if( dateLastGood and dateLastGood == dateServer ):       
+       logWrite("The latest hrrr_sfc  data has already been downloaded." )            
+       sys.exit(0)
+    elif(dateLastGood and  dateLastGood > dateServer  ):      
+       logWrite("Paradoxically the latest local data is more recent than that on the server." )            
+       sys.exit(0)                    
+
+    # if we are here then we need to download latest
+    fileName=getRemoteContent(dateServer,"nc");    
+    if( fileName): 
+       logWrite("Just downloaded {0} the latest data.".format(fileName) )                  
+    else:
+       logWrite("Unable to download {0} the latest data.".format(dasfileName) )                    
+
+
+
+    sys.exit(0);
+
