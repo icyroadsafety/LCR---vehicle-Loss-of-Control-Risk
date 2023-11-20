@@ -41,16 +41,6 @@ for(*idx=0;idx<sz;idx++)
 {
   @var_nm=@prc(idx);
 
-  // we can work with att pointers as well 
-  // sprint - ouptut is of type NC_CHAR
-  @att_avg=sprint(@var_nm,"%s@total"); 
-  @att_range=sprint(@var_nm,"%s@range"); 
- 
-  *@att_avg= *@var_nm.avg();
-  *@att_range={ min(*@var_nm), max(*@var_nm)}; 
-
-  @num_missing= *@var_nm.number_miss();
-
 
   if (*@var_nm.type()== NC_FLOAT)
       @num_zeros =  (*@var_nm==0.0f).total();
@@ -63,6 +53,7 @@ for(*idx=0;idx<sz;idx++)
   print(*@var_nm.avg()," avg=%f\n");
   print(*@var_nm.min()," min=%f\n");
   print(*@var_nm.max()," max=%f\n");
+  print(*@var_nm.total(),"totalx=%f\n");
   print( *@var_nm.number_miss(), " num missing=%d\n");
   print(@num_zeros," num_zeros=%.0f\n");
 
