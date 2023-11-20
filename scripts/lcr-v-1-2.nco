@@ -12,20 +12,91 @@
 *DO_LCR=1;
 
 
+// check the required variables
+if( !( exists(apcpsfc) && exists(cfrzrsfc) &&  exists(gustsfc) && exists(rh2m) &&  exists(tmp2m) )) {
+    print("This script expects the following variables:\n");
+    print("apcpsfc, cfrzrsfc, gustsfc, rh2m, tmp2m.\n"); 
+    print("some are missing.\n");
+    exit(1);
+ }
+
+
+
+
+// total precipitation
+qpf= apcpsfc * 0.039370f; 
+qpf@units="inches";
+qpf@long_name="**Accumulated precipitation [inches]";
+
+// make fresh copy of variables
+ipf=qpf;
+// decumulate - subtract from each step the previous step
+qpf(1:,:,:)=qpf(1:,:,:) - qpf(0:-2,:,:);
+ipf@units="inches";
+ipf@long_name="**1-hour precipitation [inches]";
+
+
+
+zrptype=cfrzrsfc;
+zrptype@units="present";
+zrptype@long_name="**Categorical freezing rain precipitation type";
+
+
+surfacewind=gustsfc * 2.237f;
+surfacewind@units="mph";
+surfacewind@long_name="**Surface wind gusts";
+
+surfacerh=rh2m;
+surfacerh@units="%";
+surfacerh@long_name="**2m humidity";
+
+
+
 // do all calculations in Celsius
 // Convert from kelvin to Celsius
 // then later to Fahrenheit  
-if(exists(tmp2m)){
-   surfacetemp=tmp2m-273.15f;
-   surfacetemphist=surfacetemp;           
-   surfacetemphist(1:,:,:)=( surfacetemp(0:-2,:,:) + surfacetemp(1:,:,:) )/2.0f;  
-   surfacetemphist@long_name="**6-hour 2m surface temperature history";
+surfacetemp=tmp2m-273.15f;
+surfacetemphist=surfacetemp;           
+surfacetemphist(1:,:,:)=( surfacetemp(0:-2,:,:) + surfacetemp(1:,:,:) )/2.0f;  
+surfacetemphist@long_name="**6-hour 2m surface temperature history";
+
+
+
+// calculate dew point
+if(exists(dpt2m))
+{
+  // convert from Kelvin to Celsius
+  surfacedp=dpt2m-273.15f;
 }
-if(exists(rh2m)){
-    surfacerh=rh2m;
-    surfacerh@units="%";
-    surfacerh@long_name="**2m humidity";
+else
+{
+  // calculate dew point using 1980 Bolton formula - (celsius)
+  surfacedp=surfacerh/100.0f* 6.112f*exp( (17.67f*surfacetemp) / (surfacetemp+243.5f));
+  
+ }
+  
+
+// calculate wet bulb temperature
+// keep it as double for now ?
+surfacewb = surfacetemp * atan(0.151977 * (surfacerh + 8.313659)^0.5)
+               + atan(surfacetemp + surfacerh)
+               - atan(surfacerh - 1.676331)
+               + 0.00391838 * (surfacerh)^1.5 * atan(0.023101 * surfacerh)
+               - 4.686035;
+
+
+
+// Assign total cloud cover variable
+if(exists(tcdcclm)){
+    cloudcover=tcdcclm;
+    cloudcover@units="percent";
+    cloudcover@long_name="**Cloud cover";
 }
+
+
+
+/*******************************************  Deal with snow ****************************/
+
 
 if(exists(csnowsfc)){
     snptype=csnowsfc;
@@ -40,31 +111,6 @@ else
 snptype=0f;
 }
 
-if(exists(cfrzrsfc)){
-    zrptype=cfrzrsfc;
-    zrptype@units="present";
-    zrptype@long_name="**Categorical freezing rain precipitation type";
-}
-if(exists(gustsfc)){
-    surfacewind=gustsfc * 2.237f;
-    surfacewind@units="mph";
-    surfacewind@long_name="**Surface wind gusts";
-}
-
-// total precipitation
-if(exists(apcpsfc))
-{
-  qpf= apcpsfc * 0.039370f; 
-  qpf@units="inches";
-  qpf@long_name="**Accumulated precipitation [inches]";
-
-  // make fresh copy of variables
-  ipf=qpf;
-  // decumulate - subtract from each step the previous step
-  ipf(1:,:,:)=qpf(1:,:,:) - qpf(0:-2,:,:);
-  ipf@units="inches";
-  ipf@long_name="**1-hour precipitation [inches]";
-}
 
 // Determine if the more accurate asnowsfc variable is present. If yes, decumulate it. 
 // If no, use either Kuchera ratio or 10:1 ratio to set 1-hour snowfall amounts. 
@@ -85,91 +131,46 @@ if(exists(asnowsfc))
     // Ensure that categorical precip type is set to snow if asnowsfc value is greater than zero
   where (sipf>0f)
        snptype=1f;
+  
 }
-else
-{
-    // If asnowsfc does not exist, then calculate 1-hour snowfall based on either Kuchera or 10:1 ratios
-    if(exists(kucheraratio))
-    {
-    // Set 1-hour snowfall based on Kuchera ratio if kucheraratio variable exists
-      snowsfc=ipf * kucheraratio;
-      snowsfc@units="inches";
-      snowsfc@long_name="**1-hour snowfall [inches]";
-    }
-    else
-    {
-    // Set 1-hour snowfall based on less-reliable 10 to 1 ratio,
-    // used only if both kucheraratio and asnowsfc variables do not exist
-      snowsfc=ipf * 10f;
-      snowsfc@units="inches";
-      snowsfc@long_name="**1-hour snowfall [inches]";
-    }
+ // If asnowsfc does not exist, then calculate 1-hour snowfall based on either Kuchera or 10:1 ratios
+ else  if(exists(kucheraratio))
+ {
+      
+  // Set 1-hour snowfall based on Kuchera ratio if kucheraratio variable exists
+  snowsfc=ipf * kucheraratio;
+  snowsfc@units="inches";
+  snowsfc@long_name="**1-hour snowfall [inches]";
+ }
+ else
+ {
+ // Set 1-hour snowfall based on less-reliable 10 to 1 ratio,
+ // used only if both kucheraratio and asnowsfc variables do not exist
+ snowsfc=ipf * 10f;
+ snowsfc@units="inches";
+ snowsfc@long_name="**1-hour snowfall [inches]";
 }
+
+
+/*******************************************  end snow ********************************************/
+
 
 
 // Assign BFP, NBFP and AFP, below freezing, near-freezing and above freezing precipitation variables
-if(exists(apcpsfc))
-{
-  bfp=ipf;
-  bfp@units="inches";
-  bfp@long_name="**BFP - Precipitation in surface temperatures at or below-freezing [inches]";
-  nfp=ipf;
-  nfp@units="inches";
-  nfp@long_name="**NFP - Precipitation in surface temperatures between 32F and 38F [inches]";
-  afp=ipf;
-  afp@units="inches";
-  afp@long_name="**AFP - Precipitation in surface temperatures above 38F [inches]";
-}
+bfp=ipf;
+bfp@units="inches";
+bfp@long_name="**BFP - Precipitation in surface temperatures at or below-freezing [inches]";
 
-// Assign total cloud cover variable
-if(exists(tcdcclm)){
-    cloudcover=tcdcclm;
-    cloudcover@units="percent";
-    cloudcover@long_name="**Cloud cover";
-}
-else
-{
-    // Set cloud cover to 100 if this variable does not exist,
-    // so it does not trigger the frost icing LCR limit
-    cloudcover = 100f;
-}
+nfp=ipf;
+nfp@units="inches";
+nfp@long_name="**NFP - Precipitation in surface temperatures between 32F and 38F [inches]";
 
-// Assign maximum surface wind gust variable
-if(exists(gustsfc)){
-    surfacewind=gustsfc * 2.237f;
-    surfacewind@units="mph";
-    surfacewind@long_name="**Surface wind maximum gusts";
-}
+afp=ipf;
+afp@units="inches";
+afp@long_name="**AFP - Precipitation in surface temperatures above 38F [inches]";
 
 
-// calculate dew point
-if(exists(dpt2m))
-{
-  // convert from Kelvin to Celsius
-  surfacedp=dpt2m-273.15f;
-}
-else
-{
-  // calculate dew point using 1980 Bolton formula - (celsius)
-  surfacedp=surfacerh/100.0f* 6.112f*exp( (17.67f*surfacetemp) / (surfacetemp+243.5f));
-  
- }
-  
 
-// calculate wet bulb temperature
-// keep it as double for now ?
-if(exists(surfacetemp))
-{
-  
-  surfacewb = surfacetemp * atan(0.151977 * (surfacerh + 8.313659)^0.5)
-               + atan(surfacetemp + surfacerh)
-               - atan(surfacerh - 1.676331)
-               + 0.00391838 * (surfacerh)^1.5 * atan(0.023101 * surfacerh)
-               - 4.686035;
-
-
-  
-}
   
 if(DBG==1){
   surfacedbg=surfacewb.float()-surfacetemp;
@@ -303,6 +304,14 @@ if(DO_LCR==1)
   where (lcron =! 1f && surfacerh > 99f && surfacetemp <= 27f)
     lcr = 3f;
 
+// Limit LCR to 3 when skies are clear, used to show 
+// frost icing potential when no precipitation is present
+  if(exists(tcdcclm))
+  {
+    where (lcr > 3f && cloudcover < 10f)
+      lcr = 3f;
+  }
+  
 // Set above-freezing BFP gridpoints to zero so there is 
 // no BFP plotted where temps are above freezing
   where (surfacetemp > 32f)
@@ -310,21 +319,15 @@ if(DO_LCR==1)
 
 // Set below-32F and above-38F NFP gridpoints to zero so there is 
 // no NFP plotted where temps are below 32F or above 38F
-  where (surfacetemp <= 32f)
+  where (surfacetemp <= 32f || surfacetemp > 38f)
     nfp = 0.0f;
 
-  where (surfacetemp > 38f)
-    nfp = 0.0f;
 
 // Set below-38F AFP gridpoints to zero so there is 
 // no AFP plotted where temps are below 38F
   where (surfacetemp <= 38f)
     afp = 0.0f;
 
-// Limit LCR to 3 when skies are clear, used to show 
-// frost icing potential when no precipitation is present
-  where (lcr > 3f && cloudcover < 10f)
-    lcr = 3f;
 
 }
 
