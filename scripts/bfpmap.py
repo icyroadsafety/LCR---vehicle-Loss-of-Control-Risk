@@ -1,3 +1,5 @@
+import os
+import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -10,7 +12,7 @@ import cartopy.feature as cfeature
 import cartopy.io.shapereader as shpreader
 
 
-def create_overlayed_bfp_plot(data_paths, color_table_paths, variable_names, titles):
+def create_overlayed_bfp_plot(nc_file, output_image, color_table_paths, variable_names, titles):
     fig, ax = plt.subplots(subplot_kw={'projection': ccrs.Mercator()}, figsize=(20, 16))
     ax.set_extent([-127, -65, 17, 48])  
     
@@ -51,10 +53,11 @@ def create_overlayed_bfp_plot(data_paths, color_table_paths, variable_names, tit
     shape_feature = ShapelyFeature(geoms, ccrs.PlateCarree(), edgecolor='red', alpha=0.3, lw=1, facecolor='none')
     ax.add_feature(shape_feature)
     
-
-    for data_path, color_table_path, variable_name, title in zip(data_paths, color_table_paths, variable_names, titles):
-        data = xr.open_dataset(data_path)
-        data = data.where(data != 0)
+    data = xr.open_dataset(nc_file)
+    data = data.where(data != 0)
+    for color_table_path, variable_name, title in zip(color_table_paths, variable_names, titles):
+        # data = xr.open_dataset(data_path)
+        # data = data.where(data != 0)
         color_table_data = pd.read_csv(color_table_path, skiprows=3, delim_whitespace=True, names=['red', 'green', 'blue']) 
         color_table_data[['red', 'green', 'blue']] = color_table_data[['red', 'green', 'blue']].apply(pd.to_numeric, errors='coerce') / 255.0
         color_table_data = color_table_data.dropna()
@@ -74,13 +77,30 @@ def create_overlayed_bfp_plot(data_paths, color_table_paths, variable_names, tit
     overlay2 = plt.imread(overlay2_path) 
     ax.imshow(overlay2, extent=[-77, -69, 27, 31],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
 
-    plt.savefig('bfpplus.png', dpi=100, bbox_inches='tight')
-    plt.show()
+    # plt.savefig('bfpplus.png', dpi=100, bbox_inches='tight')
+    plt.savefig(output_image , dpi=100, bbox_inches='tight')
+    # plt.show()
 
-data_paths = ['afp.nc', 'nfp.nc', 'bfp.nc']
+
+
+# data_paths = ['afp.nc', 'nfp.nc', 'bfp.nc']
+nc_file=sys.argv[1];
+output_image=sys.argv[2];
+
+# get scripts directory and move to it
+# then move to maps directory as all resources are relative to map directory
+lcrBinPath=os.path.dirname(__file__);
+os.chdir(lcrBinPath)
+os.chdir("../maps")
+
+
+
 color_table_paths = ['bfpplus-afp-colors-0-to-1.tbl', 'bfpplus-nfp-colors-0-to-1.tbl', 'bfpplus-bfp-colors-0-to-1.tbl']
 variable_names = ['afp', 'nfp', 'bfp']
 titles = ['AFP Data', 'NFP Data', 'BFP Data']
 
+
+
 # Generate overlayed plots
-create_overlayed_bfp_plot(data_paths, color_table_paths, variable_names, titles)
+create_overlayed_bfp_plot(nc_file, output_image, color_table_paths, variable_names, titles)
+
