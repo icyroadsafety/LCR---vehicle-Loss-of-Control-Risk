@@ -1,3 +1,4 @@
+import os,sys
 import xarray as xr
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
@@ -6,6 +7,11 @@ from matplotlib.colors import ListedColormap
 import numpy as np
 import cartopy.io.shapereader as shpreader
 from cartopy.feature import ShapelyFeature
+
+file_path=sys.argv[1]
+output_image=sys.argv[2]
+
+os.chdir("/home/ubuntu/lcr/maps")
 
 # Define custom colors without transparency
 custom_colors = [
@@ -27,7 +33,7 @@ custom_colors = [
 custom_cmap = ListedColormap(custom_colors, name='custom_cmap')
 
 # Open a NetCDF file using xarray
-file_path = 'lcr.nc'
+# file_path = 'lcr.nc'
 ds = xr.open_dataset(file_path)
 
 # Set values equal to 0 to NaN
@@ -121,7 +127,7 @@ with open(timestamp_file_path, 'r') as timestamp_file:
 fig.text(0.5, 0.815, f'{timestamp}', ha='center', fontsize=14)
 
 # Save the plot as an image file
-plt.savefig('lcrmap.png', dpi=130, bbox_inches='tight')
+plt.savefig(output_image, dpi=130, bbox_inches='tight')
 
 # Display the plot
-plt.show() 
+# plt.show() 
