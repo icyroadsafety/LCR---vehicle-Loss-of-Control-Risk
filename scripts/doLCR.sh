@@ -21,14 +21,16 @@ tmpNcFile="$projectDir/scratch/tmp-$plainName";
 lcrNcFile="$projectDir/scratch/lcr-$plainName"; 
 
 # output image name - normally to the directory ~/lcr/png
-if [[ $# -gt 2 ]]; then
-    outputImage=$3;
+if [[ $# -gt 3 ]]; then
+    outputLcrImage=$3;
+    outputLcrImage=$4;
 else
     # the python lcrmap.py prefers absolute filenames
-    outputImage="$projectDir/png/lcr-${plainName%.nc}.png";
+    outputLcrImage="$projectDir/png/lcr-${plainName%.nc}.png";
+    outputBfpImage="$projectDir/png/bfp-${plainName%.nc}.png";
 fi
 
-echo "$0: outputImage=$outputImage num args=${#}"
+[[  $DEBUG -gt 0 ]] &&  echo "$0: outputLcrImage=$outputLcrImage num args=${#}"
 
 vars="-v afp,bfp,nfp,lcr";
 
@@ -46,16 +48,9 @@ if [[ $? -ne 0   ]]; then
 fi
 
 ncdump -k $tmpNcFile >& /tmp/ncdump.txt || exit 1
-# check we have an ncfile
-if [[ $? -ne 0  ]]; then
-    exit 1
-fi    
 
 ncks -M $vars $tmpNcFile  >& /tmp/ncks.txt || exit 1
-# check variables are present
-if [[ $? -ne 0    ]]; then
-    exit 1
-fi    
+
 
 # find the max values of afp,bfp,nfp,lcr along the time dimension 
 CMD="ncwa -O  $vars -a time -y max -d time,1, $tmpNcFile $lcrNcFile"
@@ -66,10 +61,27 @@ if [[ $? -ne 0 ]]; then
    exit 2
 fi    
 
-# tidy up
-# [[ $DEBUG -gt 0 ]] && rm $tmpNcFile $lcrNcFile
 
-python scripts/lcrmap.py $lcrNcFile $outputImage
+CMD="python scripts/lcrmap.py $lcrNcFile $outputLcrImage &> /tmp/lcrmap.txt"
+[[ $DEBUG -gt 0 ]] && echo "$CMD";
+$CMD
+# error ? then dump stdout, stderr to stderr
+if [[  $? -ne 0 ]]; then
+    cat /tmp/lcrmap.txt
+    exit 3
+fi
+
+
+CMD="python scripts/bfpmap.py  $lcrNcFile $outputBfpImage &> /tmp/bfpmap.txt"
+[[ $DEBUG -gt 0 ]] && echo "$CMD";
+$CMD
+# error ? then dump stdout, stderr to stderr
+if [[  $? -ne 0 ]]; then
+    cat /tmp/bfpmap.txt
+    exit 4
+fi
+
+
 
 
 
