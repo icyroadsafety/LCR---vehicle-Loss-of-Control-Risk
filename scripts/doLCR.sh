@@ -15,6 +15,9 @@ inputNcFile=$2;
 
 plainName=$( basename $inputNcFile );
 
+#helps with the script names - but still need absolute paths for lcrmap and bfpmap
+cd $projectDir
+
 
 tmpNcFile="$projectDir/scratch/tmp-$plainName";
 # the python lcrmap.py prefers absolute filenames
@@ -36,7 +39,7 @@ vars="-v afp,bfp,nfp,lcr";
 
 
 # run the lcr script
-CMD="ncap2 -v -O -S scripts/lcr-v-1-2.nco $inputNcFile  ${tmpNcFile}"   
+CMD="ncap2 -v -O -S "scripts/lcr-v-1-2.nco" $inputNcFile  ${tmpNcFile}"   
 
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 # do the deed
@@ -70,6 +73,8 @@ if [[  $? -ne 0 ]]; then
     cat /tmp/lcrmap.txt
     exit 3
 fi
+
+
 
 
 CMD="python scripts/bfpmap.py  $lcrNcFile $outputBfpImage &> /tmp/bfpmap.txt"
