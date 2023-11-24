@@ -94,6 +94,7 @@ output_image=sys.argv[2]
 # so we need to be in this directory when running this script
 lcrBase=os.path.dirname(__file__)
 lcrBase=os.path.dirname(lcrBase)
+os.chdir(lcrBase)
 os.chdir("maps");
 
 

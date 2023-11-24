@@ -20,6 +20,7 @@ output_image=sys.argv[2]
 # So given  that this file is in lcr/scripts - we wish to be in lcr/maps
 lcrBase=os.path.dirname(__file__)
 lcrBase=os.path.dirname(lcrBase)
+os.chdir(lcrBase)
 os.chdir("maps");
 
 # Define custom colors without transparency
