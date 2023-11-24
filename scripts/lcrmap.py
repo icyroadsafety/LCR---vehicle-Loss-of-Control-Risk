@@ -8,10 +8,19 @@ import numpy as np
 import cartopy.io.shapereader as shpreader
 from cartopy.feature import ShapelyFeature
 
+
+
+# this should be an absolute file path to nc data file
 file_path=sys.argv[1]
+# this should be an absolute file path for  output png image
 output_image=sys.argv[2]
 
-os.chdir("/home/ubuntu/lcr/maps")
+# The meta data for the maps is in maps directory
+# So we need to be in this directory when running this script
+# So given  that this file is in lcr/scripts - we wish to be in lcr/maps
+lcrBase=os.path.dirname(__file__)
+lcrBase=os.path.dirname(lcrBase)
+os.chdir("maps");
 
 # Define custom colors without transparency
 custom_colors = [

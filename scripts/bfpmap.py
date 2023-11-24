@@ -84,14 +84,17 @@ def create_overlayed_bfp_plot(nc_file, output_image, color_table_paths, variable
 
 
 # data_paths = ['afp.nc', 'nfp.nc', 'bfp.nc']
-nc_file=sys.argv[1];
-output_image=sys.argv[2];
 
-# get scripts directory and move to it
-# then move to maps directory as all resources are relative to map directory
-lcrBinPath=os.path.dirname(__file__);
-os.chdir(lcrBinPath)
-os.chdir("../maps")
+# This should be an absolute file path to nc data file
+nc_file=sys.argv[1]
+# this should be an absolute file path to output png image
+output_image=sys.argv[2]
+
+# the meta data for the maps is in maps directory
+# so we need to be in this directory when running this script
+lcrBase=os.path.dirname(__file__)
+lcrBase=os.path.dirname(lcrBase)
+os.chdir("maps");
 
 
 
