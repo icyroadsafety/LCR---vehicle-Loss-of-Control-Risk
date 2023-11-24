@@ -17,9 +17,10 @@ fcHourList = [6, 12, 18, 24, 30, 36, 42, 48, 54,60,66, 72]
 gfsTimeDelay = 300 # minutes after initial time before grib2 becomes available.
 
 
-scriptName=os.path.basename(__file__);
+__prog__ = path.splitext(path.basename(__file__))[0]
 
-lcrBase = "/projects/me/ICY/lcr"
+
+lcrBase = "/home/ubuntu/lcr"
 
 lcrLogBase =  path.join(lcrBase, "log")
 lcrBinPath = path.join(lcrBase, "scripts")
@@ -78,7 +79,7 @@ def logWrite(sMessage):
      d1.replace(microsecond=0)         
 
      
-     sText="%s(%s): %s"%(scriptName,d1.strftime("%m-%d %H:%M"), sMessage)
+     sText="%s(%s): %s"%(__prog__,d1.strftime("%m-%d %H:%M"), sMessage)
      bVerbose and print(sText)
 
      log.write(sText+"\n")       
@@ -92,14 +93,12 @@ def latestGoodDownload():
 
     
     if( len(fList) >0):
-       # name of the form gfs.0p50.2015040500.nc     
-       # we just want the date+hour    
        fname=os.path.basename(fList.pop());
-       sT=fname.split(".")[1] 
-       # remove the r
-       sT=sT[1:]
+        # name of the form gfs.0p50.2015040500.nc     
+       # we just want the date+hour    
+       Ts=fname[-13:-3]
        # lDate=datetime.datetime.utcfromtimestamp(float(sT))
-       lDate=datetime.datetime.strptime(sT,"%Y%m%d%H")
+       lDate=datetime.datetime.strptime(Ts,"%Y%m%d%H")
        return lDate  
     else:
        return None;       
@@ -174,7 +173,6 @@ def rebaseLocalContent(fullName):
 
  
 ##############################################################################################################
-__prog__ = path.splitext(path.basename(__file__))[0]
 __version__ = "0.0.42-01"
 parser = argparse.ArgumentParser(prog=__prog__,
     description='Launch the download jobs for a set of GFS grib2 files.  Most-recent run-date and run-hour are launched by default.',
