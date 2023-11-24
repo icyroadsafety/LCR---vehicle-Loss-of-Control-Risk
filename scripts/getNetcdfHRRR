@@ -85,12 +85,14 @@ def logWrite(sMessage):
      log.write(sText+"\n")       
   
        
-# return datetime object of latest download
+# return full filename of  latest download
 def latestGoodDownload():
     # flist=glob.glob(gfsPath+"/hrrr_sfc.r??????????.nc")
     fList=glob.glob(gfsPath+"/hrrr_sfc.r[0-9]*.nc")
     fList.sort()
 
+    return fList.pop();
+    
     
     if( len(fList) >0):
        fname=os.path.basename(fList.pop());
@@ -171,6 +173,98 @@ def rebaseLocalContent(fullName):
   
    return 0;
 
+
+# does it all - checks the local and remote directories directory
+def doDownload():
+       
+    # file last good download - nb absolute file name
+    fileLastGood=latestGoodDownload();
+
+    # get date portion of file basename -hardcoded ?
+    Ts=fileLastGood[-13:-3]
+
+    dateLastGood=datetime.datetime.strptime(Ts,"%Y%m%d%H")
+
+
+    
+    # listDates is in reverse order by date    
+    listDates=listTodayYesterday();
+
+    dateServer=None  
+    dasfileName=None
+    # find first good date     
+    for d1 in listDates:
+       dasfileName=getRemoteContent(d1,"das")    
+       if ( dasfileName ):            
+         dateServer=d1;
+         os.remove(dasfileName);
+         break; 
+
+       
+    logWrite( "/***************** Starting hrrr_sfc download script ***********************/")     
+    if(dateLastGood):   
+      logWrite( "Last good download %s"% (dateLastGood.strftime("%Y/%m/%d %H:%M")) )               
+    
+    if(dateServer):
+       logWrite( "Latest hrrr_sfc file on server is dated %s"% (dateServer.strftime("%Y/%m/%d %H:%M")) )    
+    else:
+       logWrite("No hrrr_sfc content from the last 48 hours found on server." )          
+       return 0
+
+
+    if( dateLastGood and dateLastGood == dateServer ):       
+       logWrite("The latest hrrr_sfc  data has already been downloaded." )            
+       return 0
+    elif(dateLastGood and  dateLastGood > dateServer  ):      
+       logWrite("Paradoxically the latest local data is more recent than that on the server." )            
+       return 0                     
+
+    # if we are here then we need to download latest
+    fileName=getRemoteContent(dateServer,"nc");    
+    if( fileName): 
+       logWrite("Just downloaded {0} the latest data.".format(fileName) )
+       return 1
+    else:
+       logWrite("Unable to download {0} the latest data.".format(dasfileName) )                    
+       return 0  
+
+    return 0      
+
+def doLcr():
+
+    # file last good download - nb absolute file name
+    fileLastGood=latestGoodDownload();
+    if not fileLastGood:
+        return 0
+    
+    shellCMD= path.join(lcrBinPath,"doLCR.sh")
+   
+    # This script rquires the lcrBase directory - So that absolute file paths can be used
+    # for calls to lcrmap.py and bfpmap.py
+    fullCMD = "{0} {1} {2}".format(shellCMD, lcrBase, fileLastGood);
+    
+    fileBaseLastGood=path.basename(fileLastGood)
+    ret=os.system(fullCMD);
+
+    match ret:
+       case 0:
+         logWrite( "Post processing of file %s successfull"% fileBaseLastGood);
+       case 1:
+         logWrite( "Post processing of file %s failed. lcr.nco failed."% fileBaseLastGood);
+       case 2:
+         logWrite( "Post processing of file %s failed. ncwa step failed."% fileBaseLastGood);
+       case 3:
+         logWrite( "Post processing of file %s failed. lcrmap step failed."% fileBaseLastGood);
+       case 4:
+         logWrite( "Post processing of file %s failed. bfpmap step failed."% fileBaseLastGood);
+
+    if ret == 0:
+       return 1
+
+    return 0;           
+                 
+
+
  
 ##############################################################################################################
 __version__ = "0.0.42-01"
@@ -214,51 +308,13 @@ if __name__ == '__main__':
     # which creates a local file in the cwd- which is later renamed with an absolute filename
     os.chdir(gfsPath)
 
+    cret=0
+    if not bSkipDownload:
+        cret=doDownload()
 
-    # date of last good download 
-    dateLastGood=latestGoodDownload();
-
-    
-    # listDates is in reverse order by date    
-    listDates=listTodayYesterday();
-
-    dateServer=None  
-    dasfileName=None
-    # find first good date     
-    for d1 in listDates:
-       dasfileName=getRemoteContent(d1,"das")    
-       if ( dasfileName ):            
-         dateServer=d1;
-         os.remove(dasfileName);
-         break; 
-
-       
-    logWrite( "/***************** Starting hrrr_sfc download script ***********************/")     
-    if(dateLastGood):   
-      logWrite( "Last good download %s"% (dateLastGood.strftime("%Y/%m/%d %H:%M")) )               
-    
-    if(dateServer):
-       logWrite( "Latest hrrr_sfc file on server is dated %s"% (dateServer.strftime("%Y/%m/%d %H:%M")) )    
-    else:
-       logWrite("No hrrr_sfc content from the last 48 hours found on server." )          
-       sys.exit(1)  
-
-
-    if( dateLastGood and dateLastGood == dateServer ):       
-       logWrite("The latest hrrr_sfc  data has already been downloaded." )            
-       sys.exit(0)
-    elif(dateLastGood and  dateLastGood > dateServer  ):      
-       logWrite("Paradoxically the latest local data is more recent than that on the server." )            
-       sys.exit(0)                    
-
-    # if we are here then we need to download latest
-    fileName=getRemoteContent(dateServer,"nc");    
-    if( fileName): 
-       logWrite("Just downloaded {0} the latest data.".format(fileName) )                  
-    else:
-       logWrite("Unable to download {0} the latest data.".format(dasfileName) )                    
-
-
+      
+    if not bSkipProcessing:
+        cret=doLcr()
 
     sys.exit(0);
 
