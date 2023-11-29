@@ -143,11 +143,15 @@ def getRemoteContent(iDate,ext,numProc=1):
   # from "days since 1-1-1" to "hours since filetimestamp
   time_units2="hours since {0}".format(iDate.strftime("%Y-%m-%d %H:00"))
 
- 
+  time_opt="small"
+  # temporary test for download whole forecast at 0/6/12/18 hours - nb at these hours fcHour goes to  49 hours
+  if ( int(sHour) % 6 ==0 ):
+      time_opt="all"
+  
 
   shellCMD= path.join(lcrBinPath,"getNetcdfData.sh")   
   
-  fullCMD = "{0} {1} {2} {3} {4} {5}".format(shellCMD, fullRemotePath, fullLocalPath,ext,"small", "hrrr")
+  fullCMD = "{0} {1} {2} {3} {4} {5}".format(shellCMD, fullRemotePath, fullLocalPath,ext, time_opt, "hrrr")
 
   ret=os.system(fullCMD);
   
@@ -313,7 +317,7 @@ if __name__ == '__main__':
         cret=doDownload()
 
       
-    if not bSkipProcessing:
+    if bSkipDownload or (not bSkipProcessing and cret>0):
         cret=doLcr()
 
     sys.exit(0);
