@@ -161,11 +161,11 @@ else
 if(exists(surfacetemp))
 {
   
-  surfacewb = surfacetemp * atan(0.151977 * (surfacerh + 8.313659)^0.5)
+  surfacewb = surfacetemp * atan(0.151977f * (surfacerh + 8.313659f)^0.5f)
                + atan(surfacetemp + surfacerh)
-               - atan(surfacerh - 1.676331)
-               + 0.00391838 * (surfacerh)^1.5 * atan(0.023101 * surfacerh)
-               - 4.686035;
+               - atan(surfacerh - 1.676331f)
+               + 0.00391838f * (surfacerh)^1.5f * atan(0.023101f * surfacerh)
+               - 4.686035f;
 
 
   
