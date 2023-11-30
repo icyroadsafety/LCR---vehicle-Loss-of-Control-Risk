@@ -251,12 +251,12 @@ if(DO_LCR==1)
     lcron = 1f;
 }
 
-  where  (snowsfc >= 1f && snowsfc < 3f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
+  where  (snowsfc >= 1f && snowsfc < 2f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
     lcr = 3f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 3f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
+  where  (snowsfc >= 2f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
     lcr = 4f;
     lcron = 1f;
 }
@@ -272,7 +272,7 @@ if(DO_LCR==1)
     lcr = lcr + 1f;
 
 // Temperature sweet spot factor: Add 2 if temp is between 24 and 29 degrees F
-  where (lcron == 1f && ((surfacetemp >= 24f) || (zrptype > 0f)) && surfacetemp <= 29f)
+  where (lcron == 1f && ((surfacetemp >= 20f) || (zrptype > 0f)) && surfacetemp <= 29f)
     lcr = lcr + 2f;
 
 // Freezing rain or freezing drizzle factor: add 2 if ptype is freezing rain
