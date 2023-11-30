@@ -8,7 +8,7 @@ import datetime
 from datetime import date, timedelta
 import glob
 import re
-
+import ftplib
 #----------------------------------------------------------------------
 # getGFS - launches the download of a set of grib2 files
 
@@ -24,11 +24,14 @@ lcrBase = "/home/ubuntu/lcr"
 
 lcrLogBase =  path.join(lcrBase, "log")
 lcrBinPath = path.join(lcrBase, "scripts")
+lcrPngPath = path.join(lcrBase, "png")
+
 
 logFile = path.join(lcrLogBase, "hrrr-download.log")
 log=open(logFile,"a")
 
 gfsPath = path.join(lcrBase, "hrrr_nc_data")
+
 
 nomadsServer = "http://nomads.ncep.noaa.gov:80"
 hrrrRemotePath = "/dods/hrrr"
@@ -39,6 +42,52 @@ hrrrRemotePath = "/dods/hrrr"
 bVerbose=0
 
 ##############################################################################################################
+def ftpUpload():
+    
+    try:
+      session = ftplib.FTP('ftp3.ftptoyoursite.com','danrobinson','YXL@icY!VZsM526d')
+      session.cwd('/www.icyroadsafety.com/web/content/lcr/forecast/')
+    except BaseException as exception:
+      logWrite(exception)
+      return 0
+
+
+
+    lst=session.nlst('*.png')
+    lst.sort()
+
+
+    rListDir=glob.glob(lcrPngPath+"/*[0-9]*.png")
+    cnt=0;
+    now=time.time();
+      
+    for rFile in rListDir:
+      # check if file is less than 10 hours old
+      if (now - os.path.getmtime(rFile) > 10*3600):
+        continue;
+
+      rClientFile=os.path.basename(rFile)
+      if( rClientFile in lst):
+         continue
+
+      try:
+        ncfile = open(rFile,'rb')                  # file to send
+        session.storbinary('STOR '+ rClientFile , ncfile)     # send the file
+        ncfile.close()                                    # close file and FTP
+      except BaseException as exception:
+        logWrite(exception)
+        session.quit()
+        return 0
+
+      cnt+=1
+
+
+
+    session.quit()
+
+    logWrite("ftpUpload() - uploaded %d png files."% cnt)
+
+
 def mkdate(datestr):
     return datetime.datetime.strptime(datestr, '%Y-%m-%d')
 
@@ -252,7 +301,7 @@ def doLcr():
 
     match ret:
        case 0:
-         logWrite( "Post processing of file %s successfull"% fileBaseLastGood);
+         logWrite( "Post processing of file %s successful."% fileBaseLastGood);
        case 1:
          logWrite( "Post processing of file %s failed. lcr.nco failed."% fileBaseLastGood);
        case 2:
@@ -284,6 +333,7 @@ parser.add_argument('--rdate', nargs='?', type=mkdate, help='download grib2 file
 parser.add_argument('--rhour', nargs='?', type=int, choices=rHourList, help='download grib2 files fpr specified run-hour(s)')
 parser.add_argument('--skip-download', action='store_true', help='assume data already downloaded; just launch the render-and-slice process.')
 parser.add_argument('--skip-processing', action='store_true', help='do NOT launch the render-and-slice process after download.')
+parser.add_argument('--skip-upload', action='store_true', help='do NOT upload to the server using ftp.')
 parser.add_argument('-v', '--verbose', action='count', default=0, help='blather-on ...')
 parser.add_argument('-V', '--version', action='version', version='%(prog)s  (version {0})'.format(__version__), help='print version info.')
 ##############################################################################################################
@@ -305,6 +355,7 @@ if __name__ == '__main__':
     if (rHour == None): rHour = rDate.hour
     bSkipProcessing = args.skip_processing
     bSkipDownload = args.skip_download
+    bSkipUpload = args.skip_upload
     bVerbose = args.verbose
     if (bVerbose): bQuiet = False
 
@@ -317,8 +368,12 @@ if __name__ == '__main__':
         cret=doDownload()
 
       
-    if bSkipDownload or (not bSkipProcessing and cret>0):
+    if not bSkipProcessing :
         cret=doLcr()
 
+
+    if(not bSkipUpload):
+        cret=ftpUpload()
+        
     sys.exit(0);
 
