@@ -101,7 +101,7 @@ ax.add_feature(cfeature.NaturalEarthFeature(
 ax.coastlines()
 
 # # Read scale overlay image
-overlay1_path = 'mapoverlays/scalemap.png'
+overlay1_path = 'mapoverlays/scalemap1.png'
 overlay1 = plt.imread(overlay1_path) 
 ax.imshow(overlay1, extent=[-115.5, -77, 21, 23],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
 
@@ -111,9 +111,33 @@ overlay2 = plt.imread(overlay2_path)
 ax.imshow(overlay2, extent=[-78, -69, 27, 31],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
 
 # # Read map description overlay image
-overlay3_path = 'mapoverlays/lcrmap-desc.png'
+overlay3_path = 'mapoverlays/lcrmap-desc1.png'
 overlay3 = plt.imread(overlay3_path) 
-ax.imshow(overlay3, extent=[-126.5, -116.5, 21, 25.5],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
+ax.imshow(overlay3, extent=[-126.5, -116.5, 21, 25.6],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
+
+# # Print Scale and Description Text
+fig.text(0.135, 0.245, f'LCR v1.2', ha='left', fontsize=15, color=(111/255, 111/255, 111/255))
+fig.text(0.135, 0.235, f'Risk of vehicle loss-of-control', ha='left', fontsize=9, color=(0/255, 0/255, 0/255))
+fig.text(0.135, 0.228, f'due to reduced surface friction', ha='left', fontsize=9, color=(0/255, 0/255, 0/255))
+fig.text(0.135, 0.221, f'conditions from winter precipitation.', ha='left', fontsize=9, color=(0/255, 0/255, 0/255))
+fig.text(0.135, 0.210, f'Disclaimer: this chart was generated', ha='left', fontsize=9, color=(111/255, 111/255, 111/255))
+fig.text(0.135, 0.203, f'from numerical model data', ha='left', fontsize=9, color=(111/255, 111/255, 111/255))
+fig.text(0.135, 0.192, f'https://icyroadsafety.com/lcr/', ha='left', fontsize=11, color=(0/255, 0/255, 0/255))
+fig.text(0.293, 0.207, f'CHANCE', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.405, 0.207, f'LIKELY', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.488, 0.207, f'SERIOUS', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.2915, 0.188, f'1', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.331, 0.188, f'2', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.3705, 0.188, f'3', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.410, 0.188, f'4', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.4495, 0.188, f'5', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.489, 0.188, f'6', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.5285, 0.188, f'7', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.568, 0.188, f'8', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.6075, 0.188, f'9', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.647, 0.188, f'10', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.6865, 0.188, f'11', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
+fig.text(0.726, 0.188, f'12', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
 
 # Add interstate from local data
 reader = shpreader.Reader("shp/tl_2019_us_primaryroads.shp")
