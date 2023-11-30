@@ -7,7 +7,9 @@
 # python scripts lcrmap.py and bfpmap.py require that  cwd is ~/lcr/map   
 # scripts and directories are RELATIVE to this
 
-DEBUG=1;
+DEBUG=0;
+
+doBFP=1
 
 #gfs or nam or hrrr netcdf4 ? file
 projectDir=$1;
@@ -29,9 +31,13 @@ if [[ $# -gt 3 ]]; then
     outputLcrImage=$4;
 else
     # the python lcrmap.py prefers absolute filenames
-    outputLcrImage="$projectDir/png/lcr-${plainName%.nc}.png";
-    outputBfpImage="$projectDir/png/bfp-${plainName%.nc}.png";
+    outputLcrImage="$projectDir/png/lcr_6_${plainName%.nc}.png";
+    outputBfpImage="$projectDir/png/bfp_6_${plainName%.nc}.png";
 fi
+
+#return if images already exists
+[[ -e $outputLcrImage ]] && [[ -e $outputBfpImage ]] && exit 0
+
 
 [[  $DEBUG -gt 0 ]] &&  echo "$0: outputLcrImage=$outputLcrImage num args=${#}"
 
@@ -39,8 +45,7 @@ vars="-v afp,bfp,nfp,lcr";
 
 
 # run the lcr script
-CMD="ncap2 -v -O -S "scripts/lcr-v-1-2.nco" $inputNcFile  ${tmpNcFile}"   
-
+CMD="ncap2 -D 2 -v -O -S "scripts/lcr-v-1-2.nco" $inputNcFile  ${tmpNcFile}"   
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 # do the deed
 $CMD
@@ -56,7 +61,7 @@ ncks -M $vars $tmpNcFile  >& /tmp/ncks.txt || exit 1
 
 
 # find the max values of afp,bfp,nfp,lcr along the time dimension 
-CMD="ncwa -O  $vars -a time -y max -d time,1, $tmpNcFile $lcrNcFile"
+CMD="ncwa -O  $vars -a time -y max -d time,1,6 $tmpNcFile $lcrNcFile"
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 # do the deed
 $CMD
@@ -64,32 +69,38 @@ if [[ $? -ne 0 ]]; then
    exit 2
 fi    
 
+# delete temporary file
+[[ -e $tmpNcFile ]] && rm $tmpNcFile;
+
 
 CMD="python scripts/lcrmap.py $lcrNcFile $outputLcrImage &> /tmp/lcrmap.txt"
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
-$CMD
+# run command in backround
+$CMD &
 # error ? then dump stdout, stderr to stderr
-if [[  $? -ne 0 ]]; then
-    cat /tmp/lcrmap.txt
-    exit 3
+# if [[  $? -ne 0 ]]; then
+#     cat /tmp/lcrmap.txt
+#     exit 3
+# fi
+
+
+# bfp taking toooooo long
+if [[ $doBFP -gt 0 ]]; then 
+
+    CMD="python scripts/bfpmap.py  $lcrNcFile $outputBfpImage &> /tmp/bfpmap.txt"
+    [[ $DEBUG -gt 0 ]] && echo "$CMD";
+    $CMD
+    # error ? then dump stdout, stderr to stderr
+    if [[  $? -ne 0 ]]; then
+	cat /tmp/bfpmap.txt
+	exit 4
+    fi
 fi
 
+wait
 
-
-
-CMD="python scripts/bfpmap.py  $lcrNcFile $outputBfpImage &> /tmp/bfpmap.txt"
-[[ $DEBUG -gt 0 ]] && echo "$CMD";
-$CMD
-# error ? then dump stdout, stderr to stderr
-if [[  $? -ne 0 ]]; then
-    cat /tmp/bfpmap.txt
-    exit 4
-fi
-
-
-
-
-
+# delete temporary file
+[[ -e $lcrNcFile ]] && rm $lcrNcFile;
 
 
 exit 0;
