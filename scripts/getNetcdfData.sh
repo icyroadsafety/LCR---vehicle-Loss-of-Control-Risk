@@ -33,6 +33,9 @@ medium) dtime="-d time,0,18"
 small) dtime="-d time,0,6"
 ;;
 
+all) dtime="-d time,0,"
+;;     
+
 tst) dtime="-d time,0,1 -d lat,20,21 -d lon,0,4"
 ;;     
     
