@@ -28,8 +28,8 @@ def create_overlayed_bfp_plot(nc_file, output_image, color_table_paths, variable
     gl = ax.gridlines(crs=ccrs.PlateCarree(), linestyle='--', alpha=0.8)
     
     
-    color_bar1 = plt.imread('mapoverlays/bfpplus-scale.png')
-    ax.imshow(color_bar1, extent=[-120, -72, 17, 24.5], transform=ccrs.PlateCarree(), alpha=1, zorder=10)  
+    color_bar1 = plt.imread('mapoverlays/bfpplus-scale2.png')
+    ax.imshow(color_bar1, extent=[-120, -72, 16.8, 24.5], transform=ccrs.PlateCarree(), alpha=1, zorder=10)  
 
     # Read the shapefiles for Canada and Mexico
     canada_shapefile = 'shp/CAN_adm0.shp'
@@ -71,6 +71,15 @@ def create_overlayed_bfp_plot(nc_file, output_image, color_table_paths, variable
 
     # Add timestamp to the top of the image
     fig.text(0.5, 0.845, f'{timestamp}', ha='center', fontsize=14)
+
+    # Add text to map scale
+    fig.text(0.5, 0.257, f'BFP - Below-Freezing Precipitation (Icy Road Warning Area): Maximum 1-hour precipitation occurring in surface temperatures at or below 32°F / 0°C.', ha='center', fontsize=10.5, color=(0/255, 9/255, 189/255))
+    fig.text(0.498, 0.228, f'NFP - Near-Freezing Precipitation (Icy Road Caution Area): Maximum 1-hour precipitation occurring in surface temperatures between 32°F and 38°F.', ha='center', fontsize=10.5, color=(189/255, 120/255, 0/255))
+    fig.text(0.488, 0.198, f'AFP - Above-Freezing Precipitation (Icy roads not anticipated in this area): Precipitation occurring in surface temperatures above 38°F / 3.33°C', ha='center', fontsize=10.5, color=(0/255, 189/255, 4/255))
+    fig.text(0.523, 0.155, f'Maximum 1-Hour Precipitation amount', ha='center', fontsize=11, color=(71/255, 71/255, 71/255))
+    fig.text(0.229, 0.168, f'0"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
+    fig.text(0.517, 0.168, f'0.05"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
+    fig.text(0.796, 0.168, f'0.1"+', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
 
     # # Read logo overlay image
     overlay2_path = 'mapoverlays/logomap.png'
