@@ -241,22 +241,22 @@ if(DO_LCR==1)
 }
 
    // Baseline LCR designations if precip type is snow
-  where  (snowsfc > 0.0f && snowsfc < 0.5f && surfacetemp <= 38f && surfacewb <= 34f && snptype > 0f){
+  where  (snowsfc > 0.0f && snowsfc < 0.3f && surfacetemp <= 38f && surfacewb <= 34f && snowsfc > 0f){
     lcr = 1f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 0.5f && snowsfc < 1f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
+  where  (snowsfc >= 0.3f && snowsfc < 0.8f && surfacetemp <= 36f && surfacewb <= 33f && snowsfc > 0f){
     lcr = 2f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 1f && snowsfc < 2f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
+  where  (snowsfc >= 0.8f && snowsfc < 1.3f && surfacetemp <= 36f && surfacewb <= 33f && snowsfc > 0f){
     lcr = 3f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 2f && surfacetemp <= 36f && surfacewb <= 33f && snptype > 0f){
+  where  (snowsfc >= 1.3f && surfacetemp <= 36f && surfacewb <= 33f && snowsfc > 0f){
     lcr = 4f;
     lcron = 1f;
 }
