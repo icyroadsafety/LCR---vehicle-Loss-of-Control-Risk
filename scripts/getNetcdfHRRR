@@ -9,6 +9,7 @@ from datetime import date, timedelta
 import glob
 import re
 import ftplib
+import pytz
 #----------------------------------------------------------------------
 # getGFS - launches the download of a set of grib2 files
 
@@ -203,6 +204,7 @@ def getRemoteContent(iDate,ext,numProc=1):
   fullCMD = "{0} {1} {2} {3} {4} {5}".format(shellCMD, fullRemotePath, fullLocalPath,ext, time_opt, "hrrr")
 
   ret=os.system(fullCMD);
+  ret=os.waitstatus_to_exitcode(ret)
   
   if(ret==0 and os.path.isfile(fullLocalPath) ):
     return os.path.basename(fullLocalPath);
@@ -225,6 +227,33 @@ def rebaseLocalContent(fullName):
 
   
    return 0;
+
+def Caption (ncFile, srtIndex, endIndex):
+
+    # time step in hours - should be getting this from the ncFile
+    step=1;
+    ncBaseFile=path.basename(ncFile)
+
+    # get product string
+    Product=ncBaseFile.split("_")[0]
+    Product=Product.upper();
+
+    # get date from file
+    Ts=ncFile[-13:-3]
+    fcDate=datetime.datetime.strptime(Ts,"%Y%m%d%H")
+
+    srtDate=fcDate.astimezone(pytz.timezone('US/Central')) + datetime.timedelta(hours=srtIndex)
+    endDate=fcDate.astimezone(pytz.timezone('US/Central')) + datetime.timedelta(hours=endIndex)
+
+    # print(srtDate)
+    # print(endDate)
+
+    title="Valid from {}z to {}z CST.  Generated from {}z {} {}".format(  srtDate.strftime("%H"), endDate.strftime("%H"),   fcDate.strftime("%H"), Product, fcDate.strftime("%m/%d/%y")  )
+    
+    return title
+
+
+
 
 
 # does it all - checks the local and remote directories directory
@@ -283,21 +312,29 @@ def doDownload():
 
     return 0      
 
-def doLcr():
+def doLcr(fileLastGood, srtIndex, endIndex):
 
     # file last good download - nb absolute file name
-    fileLastGood=latestGoodDownload();
+    if ( not fileLastGood ):
+       fileLastGood=latestGoodDownload()
+       
     if not fileLastGood:
         return 0
-    
+
+       
+    Title =  Caption(fileLastGood, srtIndex, endIndex )
+    # title has spaces so quote
+    Title="'"+ Title+"'" 
     shellCMD= path.join(lcrBinPath,"doLCR.sh")
    
     # This script rquires the lcrBase directory - So that absolute file paths can be used
     # for calls to lcrmap.py and bfpmap.py
-    fullCMD = "{0} {1} {2}".format(shellCMD, lcrBase, fileLastGood);
+    fullCMD = "{0} {1} {2} {3} {4} {5}".format(shellCMD, lcrBase, fileLastGood, srtIndex, endIndex, Title );
+
     
     fileBaseLastGood=path.basename(fileLastGood)
     ret=os.system(fullCMD);
+    ret=os.waitstatus_to_exitcode(ret)      
 
     match ret:
        case 0:
@@ -310,12 +347,17 @@ def doLcr():
          logWrite( "Post processing of file %s failed. lcrmap step failed."% fileBaseLastGood);
        case 4:
          logWrite( "Post processing of file %s failed. bfpmap step failed."% fileBaseLastGood);
+       case 5:
+         logWrite( "Post processing of file %s failed."% fileBaseLastGood);
+       case 10:
+         logWrite( "Images from  %s already exist."% fileBaseLastGood);
 
-    if ret == 0:
+    if ret == 0 or ret == 10:
        return 1
 
     return 0;           
-                 
+
+
 
 
  
@@ -367,9 +409,10 @@ if __name__ == '__main__':
     if not bSkipDownload:
         cret=doDownload()
 
-      
+
+    # hard coded indices temporary hack    
     if not bSkipProcessing :
-        cret=doLcr()
+        cret=doLcr(None,2,9)
 
 
     if(not bSkipUpload):
