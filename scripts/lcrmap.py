@@ -14,7 +14,8 @@ from cartopy.feature import ShapelyFeature
 file_path=sys.argv[1]
 # this should be an absolute file path for  output png image
 output_image=sys.argv[2]
-
+# title at top of image
+timestamp=sys.argv[3]
 # The meta data for the maps is in maps directory
 # So we need to be in this directory when running this script
 # So given  that this file is in lcr/scripts - we wish to be in lcr/maps
@@ -22,6 +23,7 @@ lcrBase=os.path.dirname(__file__)
 lcrBase=os.path.dirname(lcrBase)
 os.chdir(lcrBase)
 os.chdir("maps");
+
 
 # Define custom colors without transparency
 custom_colors = [
@@ -153,9 +155,9 @@ shape_feature = ShapelyFeature(geoms, ccrs.PlateCarree(), edgecolor='red', alpha
 ax.add_feature(shape_feature)
 
 # Read timestamp from the text file
-timestamp_file_path = 'lcrtimestamp.txt'
-with open(timestamp_file_path, 'r') as timestamp_file:
-    timestamp = timestamp_file.read().strip()
+# timestamp_file_path = 'lcrtimestamp.txt'
+# with open(timestamp_file_path, 'r') as timestamp_file:
+#    timestamp = timestamp_file.read().strip()
 
 # Add timestamp to the top of the image
 fig.text(0.5, 0.815, f'{timestamp}', ha='center', fontsize=14)
