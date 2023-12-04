@@ -12,9 +12,9 @@ import cartopy.feature as cfeature
 import cartopy.io.shapereader as shpreader
 
 
-def create_overlayed_bfp_plot(nc_file, output_image, color_table_paths, variable_names, titles):
+def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_paths, variable_names, titles):
     fig, ax = plt.subplots(subplot_kw={'projection': ccrs.Mercator()}, figsize=(20, 16))
-    ax.set_extent([-127, -65, 17, 48])  
+    ax.set_extent([-127, -63.5, 19, 46.5])  
     
     # Add map features
     ax.add_feature(cfeature.NaturalEarthFeature(
@@ -28,8 +28,8 @@ def create_overlayed_bfp_plot(nc_file, output_image, color_table_paths, variable
     gl = ax.gridlines(crs=ccrs.PlateCarree(), linestyle='--', alpha=0.8)
     
     
-    color_bar1 = plt.imread('mapoverlays/bfpplus-scale2.png')
-    ax.imshow(color_bar1, extent=[-120, -72, 16.8, 24.5], transform=ccrs.PlateCarree(), alpha=1, zorder=10)  
+    color_bar1 = plt.imread('mapoverlays/bfpplus-scale3.png')
+    ax.imshow(color_bar1, extent=[-124, -71.3, 19, 24.7], transform=ccrs.PlateCarree(), alpha=1, zorder=10)  
 
     # Read the shapefiles for Canada and Mexico
     canada_shapefile = 'shp/CAN_adm0.shp'
@@ -65,42 +65,45 @@ def create_overlayed_bfp_plot(nc_file, output_image, color_table_paths, variable
         plot = data[variable_name].plot(ax=ax, cmap=cmap, add_colorbar=False,transform=ccrs.PlateCarree(), vmin=0, vmax=0.1)
 
     # Read timestamp from the text file
-    timestamp_file_path = 'bfptimestamp.txt'
-    with open(timestamp_file_path, 'r') as timestamp_file:
-        timestamp = timestamp_file.read().strip()
+    # timestamp_file_path = 'bfptimestamp.txt'
+    #with open(timestamp_file_path, 'r') as timestamp_file:
+    #    timestamp = timestamp_file.read().strip()
 
     # Add timestamp to the top of the image
-    fig.text(0.5, 0.845, f'{timestamp}', ha='center', fontsize=14)
+    fig.text(0.5, 0.807, f'{timestamp}', ha='center', fontsize=14)
 
     # Add text to map scale
-    fig.text(0.5, 0.257, f'BFP - Below-Freezing Precipitation (Icy Road Warning Area): Maximum 1-hour precipitation occurring in surface temperatures at or below 32°F / 0°C.', ha='center', fontsize=10.5, color=(0/255, 9/255, 189/255))
-    fig.text(0.498, 0.228, f'NFP - Near-Freezing Precipitation (Icy Road Caution Area): Maximum 1-hour precipitation occurring in surface temperatures between 32°F and 38°F.', ha='center', fontsize=10.5, color=(189/255, 120/255, 0/255))
-    fig.text(0.488, 0.198, f'AFP - Above-Freezing Precipitation (Icy roads not anticipated in this area): Precipitation occurring in surface temperatures above 38°F / 3.33°C', ha='center', fontsize=10.5, color=(0/255, 189/255, 4/255))
-    fig.text(0.523, 0.155, f'Maximum 1-Hour Precipitation amount', ha='center', fontsize=11, color=(71/255, 71/255, 71/255))
-    fig.text(0.229, 0.168, f'0"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
-    fig.text(0.517, 0.168, f'0.05"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
-    fig.text(0.796, 0.168, f'0.1"+', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
+    fig.text(0.231, 0.271, f'BFP: Below-Freezing Precipitation (Icy Road Warning Area)', ha='left', fontsize=10.5, color=(0/255, 9/255, 189/255))
+    fig.text(0.449, 0.271, f'NFP: Near-Freezing Precipitation (Icy Road Caution Area)', ha='left', fontsize=10.5, color=(189/255, 120/255, 0/255))
+    fig.text(0.663, 0.271, f'AFP: Above-Freezing Precipitation', ha='left', fontsize=10.5, color=(0/255, 189/255, 4/255))
+    fig.text(0.165, 0.258, f'BFP: Below 32°F', ha='left', fontsize=10.5, color=(0/255, 9/255, 189/255))
+    fig.text(0.165, 0.244, f'NFP: 32°F-38°F', ha='left', fontsize=10.5, color=(189/255, 120/255, 0/255))
+    fig.text(0.165, 0.230, f'AFP: Above 38°F', ha='left', fontsize=10.5, color=(0/255, 189/255, 4/255))
+    fig.text(0.190, 0.207, f'Surface', ha='center', fontsize=10.5, color=(71/255, 71/255, 71/255))
+    fig.text(0.190, 0.197, f'Temperature', ha='center', fontsize=10.5, color=(71/255, 71/255, 71/255))
+    fig.text(0.514, 0.197, f'Maximum 1-Hour Precipitation', ha='center', fontsize=11, color=(71/255, 71/255, 71/255))
+    fig.text(0.230, 0.210, f'0"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
+    fig.text(0.514, 0.210, f'0.05"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
+    fig.text(0.788, 0.210, f'0.1"+', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
 
     # # Read logo overlay image
     overlay2_path = 'mapoverlays/logomap.png'
     overlay2 = plt.imread(overlay2_path) 
-    ax.imshow(overlay2, extent=[-77, -69, 27, 31],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
+    ax.imshow(overlay2, extent=[-77, -69, 28, 32],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
 
-    # plt.savefig('bfpplus.png', dpi=100, bbox_inches='tight')
-    plt.savefig(output_image , dpi=100, bbox_inches='tight')
+    # plt.savefig('bfpplus.png', dpi=130, bbox_inches='tight')
+    plt.savefig(output_image , dpi=130, bbox_inches='tight')
     # plt.show()
 
 
 
 # data_paths = ['afp.nc', 'nfp.nc', 'bfp.nc']
+nc_file=sys.argv[1];
+output_image=sys.argv[2];
+timestamp=sys.argv[3]
 
-# This should be an absolute file path to nc data file
-nc_file=sys.argv[1]
-# this should be an absolute file path to output png image
-output_image=sys.argv[2]
-
-# the meta data for the maps is in maps directory
-# so we need to be in this directory when running this script
+# get scripts directory and move to it
+# then move to maps directory as all resources are relative to map directory
 lcrBase=os.path.dirname(__file__)
 lcrBase=os.path.dirname(lcrBase)
 os.chdir(lcrBase)
@@ -115,5 +118,5 @@ titles = ['AFP Data', 'NFP Data', 'BFP Data']
 
 
 # Generate overlayed plots
-create_overlayed_bfp_plot(nc_file, output_image, color_table_paths, variable_names, titles)
+create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_paths, variable_names, titles)
 
