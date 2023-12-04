@@ -14,6 +14,9 @@ doBFP=1
 #gfs or nam or hrrr netcdf4 ? file
 projectDir=$1;
 inputNcFile=$2;
+srtIndex=$3
+endIndex=$4
+Caption=$5
 
 plainName=$( basename $inputNcFile );
 
@@ -22,26 +25,37 @@ cd $projectDir
 
 
 tmpNcFile="$projectDir/scratch/tmp-$plainName";
+tmp2NcFile="$projectDir/scratch/tmp2-$plainName";
 # the python lcrmap.py prefers absolute filenames
 lcrNcFile="$projectDir/scratch/lcr-$plainName"; 
 
 # output image name - normally to the directory ~/lcr/png
-if [[ $# -gt 3 ]]; then
-    outputLcrImage=$3;
-    outputLcrImage=$4;
-else
-    # the python lcrmap.py prefers absolute filenames
-    outputLcrImage="$projectDir/png/lcr_6_${plainName%.nc}.png";
-    outputBfpImage="$projectDir/png/bfp_6_${plainName%.nc}.png";
-fi
+# the python lcrmap.py prefers absolute filenames
+outputLcrImage="$projectDir/png/${plainName%.nc}_${srtIndex}_${endIndex}_lcr.png";
+outputBfpImage="$projectDir/png/${plainName%.nc}_${srtIndex}_${endIndex}_bfp.png";
+
+LcrCaption="LCR ${Caption}"
+BfpCaption="BFP+ ${Caption}"
 
 #return if images already exists
-[[ -e $outputLcrImage ]] && [[ -e $outputBfpImage ]] && exit 0
+[[ -e $outputLcrImage ]] && [[ -e $outputBfpImage ]] && exit 10
 
+[[ $DEBUG -gt 0 ]] &&  echo "$0: outputLcrImage=$outputLcrImage num args=${#} LcrCaption=${LcrCaption}"
 
-[[  $DEBUG -gt 0 ]] &&  echo "$0: outputLcrImage=$outputLcrImage num args=${#}"
 
 vars="-v afp,bfp,nfp,lcr";
+
+# cut down by time according to  indicies
+CMD="ncks -O -d time,${srtIndex},${endIndex} $inputNcFile ${tmp2NcFile}"
+[[ $DEBUG -gt 0 ]] && echo "$CMD";
+# do the deed
+$CMD
+
+if [[ $? -ne 0   ]]; then
+    [[  -e  "${tmp2NcFile}" ]] && rm "$tmp2NcFile"
+    exit 1
+fi
+
 
 
 # run the lcr script
@@ -69,14 +83,17 @@ if [[ $? -ne 0 ]]; then
    exit 2
 fi    
 
-# delete temporary file
+# delete temporary files
 [[ -e $tmpNcFile ]] && rm $tmpNcFile;
+[[ -e $tmp2NcFile ]] && rm $tmp2NcFile;
 
 
-CMD="python scripts/lcrmap.py $lcrNcFile $outputLcrImage &> /tmp/lcrmap.txt"
+
+
+CMD="python scripts/lcrmap.py $lcrNcFile $outputLcrImage ${LcrCaption@Q}  &> /tmp/lcrmap.txt &"
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 # run command in backround
-$CMD &
+eval ${CMD} 
 # error ? then dump stdout, stderr to stderr
 # if [[  $? -ne 0 ]]; then
 #     cat /tmp/lcrmap.txt
@@ -87,9 +104,9 @@ $CMD &
 # bfp taking toooooo long
 if [[ $doBFP -gt 0 ]]; then 
 
-    CMD="python scripts/bfpmap.py  $lcrNcFile $outputBfpImage &> /tmp/bfpmap.txt"
+    CMD="python scripts/bfpmap.py  $lcrNcFile $outputBfpImage ${BfpCaption@Q} >&  /tmp/bfpmap.txt"
     [[ $DEBUG -gt 0 ]] && echo "$CMD";
-    $CMD
+    eval ${CMD}   
     # error ? then dump stdout, stderr to stderr
     if [[  $? -ne 0 ]]; then
 	cat /tmp/bfpmap.txt
@@ -99,8 +116,13 @@ fi
 
 wait
 
+[[ !  -e $outputLcrImage ]] ||  [[ !  -e $outputBfpImage ]] && exit 5
+
 # delete temporary file
 [[ -e $lcrNcFile ]] && rm $lcrNcFile;
+
+
+
 
 
 exit 0;

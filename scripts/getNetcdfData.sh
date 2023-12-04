@@ -30,7 +30,7 @@ large) dtime="-d time,0,23"
 medium) dtime="-d time,0,18"
 ;;
 
-small) dtime="-d time,0,6"
+small) dtime="-d time,0,9"
 ;;
 
 all) dtime="-d time,0,"
