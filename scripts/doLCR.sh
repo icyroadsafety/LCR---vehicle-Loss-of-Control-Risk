@@ -24,10 +24,10 @@ plainName=$( basename $inputNcFile );
 cd $projectDir
 
 
-tmpNcFile="$projectDir/scratch/tmp-$plainName";
-tmp2NcFile="$projectDir/scratch/tmp2-$plainName";
+tmpNcFile="$projectDir/scratch/tmp_$plainName";
+ncoNcFile="$projectDir/scratch/nco_$plainName";
 # the python lcrmap.py prefers absolute filenames
-lcrNcFile="$projectDir/scratch/lcr-$plainName"; 
+lcrNcFile="$projectDir/scratch/lcr_$plainName"; 
 
 # output image name - normally to the directory ~/lcr/png
 # the python lcrmap.py prefers absolute filenames
@@ -46,36 +46,35 @@ BfpCaption="BFP+ ${Caption}"
 vars="-v afp,bfp,nfp,lcr";
 
 # cut down by time according to  indicies
-CMD="ncks -O -d time,${srtIndex},${endIndex} $inputNcFile ${tmp2NcFile}"
+CMD="ncks -O -d time,${srtIndex},${endIndex} $inputNcFile ${tmpNcFile}"
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 # do the deed
 $CMD
 
 if [[ $? -ne 0   ]]; then
-    [[  -e  "${tmp2NcFile}" ]] && rm "$tmp2NcFile"
+    [[  -e  "${ncoNcFile}" ]] && rm "$ncoNcFile"
     exit 1
 fi
 
 
 
 # run the lcr script
-CMD="ncap2 -D 2 -v -O -S "scripts/lcr-v-1-2.nco" $inputNcFile  ${tmpNcFile}"   
+CMD="ncap2 -D 2 -v -O -S "scripts/lcr-v-1-2.nco" $tmpNcFile  ${ncoNcFile}"   
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 # do the deed
-$CMD
+eval $CMD
 
 if [[ $? -ne 0   ]]; then
-    [[  -e  "${tmpNcFile}" ]] && rm "$tmpNcFile"
     exit 1
 fi
 
-ncdump -k $tmpNcFile >& /tmp/ncdump.txt || exit 1
+ncdump -k $ncoNcFile >& /tmp/ncdump.txt || exit 1
 
-ncks -M $vars $tmpNcFile  >& /tmp/ncks.txt || exit 1
+ncks -M $vars $ncoNcFile  >& /tmp/ncks.txt || exit 1
 
 
 # find the max values of afp,bfp,nfp,lcr along the time dimension 
-CMD="ncwa -O  $vars -a time -y max -d time,1,6 $tmpNcFile $lcrNcFile"
+CMD="ncwa -O  $vars -a time -y max -d time,1,6 $ncoNcFile $lcrNcFile"
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 # do the deed
 $CMD
@@ -83,9 +82,6 @@ if [[ $? -ne 0 ]]; then
    exit 2
 fi    
 
-# delete temporary files
-[[ -e $tmpNcFile ]] && rm $tmpNcFile;
-[[ -e $tmp2NcFile ]] && rm $tmp2NcFile;
 
 
 
@@ -121,6 +117,9 @@ wait
 # delete temporary file
 [[ -e $lcrNcFile ]] && rm $lcrNcFile;
 
+# delete temporary files
+[[ -e $tmpNcFile ]] && rm $tmpNcFile;
+[[ -e $ncoNcFile ]] && rm $ncoNcFile;
 
 
 
