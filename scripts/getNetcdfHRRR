@@ -12,7 +12,7 @@ import ftplib
 import pytz
 #----------------------------------------------------------------------
 # getGFS - launches the download of a set of grib2 files
-
+fRemoteFileList=["a-6hour-hrrr-bfp-archive.shtml",  "a-6hour-hrrr-bfp.shtml", "a-6hour-hrrr-lcr-archive.shtml",  "a-6hour-hrrr-lcr.shtml", "a-last-run-time.shtml"]
 rHourList = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
 fcHourList = [6, 12, 18, 24, 30, 36, 42, 48, 54,60,66, 72]
 gfsTimeDelay = 300 # minutes after initial time before grib2 becomes available.
@@ -21,7 +21,7 @@ gfsTimeDelay = 300 # minutes after initial time before grib2 becomes available.
 __prog__ = path.splitext(path.basename(__file__))[0]
 
 
-lcrBase = "/home/ubuntu/lcr"
+lcrBase = "/projects/me/ICY/LCR---vehicle-Loss-of-Control-Risk"
 
 lcrLogBase =  path.join(lcrBase, "log")
 lcrBinPath = path.join(lcrBase, "scripts")
@@ -43,9 +43,10 @@ hrrrRemotePath = "/dods/hrrr"
 bVerbose=0
 
 ##############################################################################################################
-def ftpUpload():
+def doUpload(fList,overWrite=False):
     
     try:
+      # danrobinson@ftp3.ftptoyoursite.com:/www.icyroadsafety.com/web/content/lcr/forecast
       session = ftplib.FTP('ftp3.ftptoyoursite.com','danrobinson','YXL@icY!VZsM526d')
       session.cwd('/www.icyroadsafety.com/web/content/lcr/forecast/')
     except BaseException as exception:
@@ -54,21 +55,16 @@ def ftpUpload():
 
 
 
-    lst=session.nlst('*.png')
-    lst.sort()
+    fListRemote=session.nlst('*.png')
+    fListRemote.sort()
 
 
-    rListDir=glob.glob(lcrPngPath+"/*[0-9]*.png")
+    # fList=glob.glob(lcrPngPath+"/*[0-9]*.png")
     cnt=0;
-    now=time.time();
-      
-    for rFile in rListDir:
-      # check if file is less than 10 hours old
-      if (now - os.path.getmtime(rFile) > 10*3600):
-        continue;
 
+    for rFile in fList:
       rClientFile=os.path.basename(rFile)
-      if( rClientFile in lst):
+      if( not overWrite and  rClientFile in fListRemote):
          continue
 
       try:
@@ -78,7 +74,7 @@ def ftpUpload():
       except BaseException as exception:
         logWrite(exception)
         session.quit()
-        return 0
+        return cnt
 
       cnt+=1
 
@@ -86,12 +82,120 @@ def ftpUpload():
 
     session.quit()
 
-    logWrite("ftpUpload() - uploaded %d png files."% cnt)
+    # logWrite("doUpload() - uploaded %d files."% cnt)
+    return cnt
 
+
+def prepUpload( Model, runDate ):
+
+    fList=[]
+
+    runDateStr=runDate.strftime("%Y%m%d%H")
+
+    scratchPath=path.join(lcrBase,"scratch")
+
+    lcrPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r{0}_[0-9]*_[0-9]*_lcr.png".format(runDateStr))
+    bfpPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r{0}_[0-9]*_[0-9]*_bfp.png".format(runDateStr))
+
+    if( len(lcrPngList)==0 or len(bfpPngList)==0 ):
+        return []
+
+    linkSkeleton='<a href="/lcr/forecast/{0}"><img src="/lcr/forecast/{0}" style="width:100%;"></a>'
+    with open(path.join(scratchPath,"a-6hour-hrrr-lcr.shtml"), "w" ) as f:
+        f.write(linkSkeleton.format(os.path.basename(lcrPngList[0])))
+
+    with open(path.join(scratchPath,"a-6hour-hrrr-bfp.shtml"), "w" ) as f:
+        f.write(linkSkeleton.format(os.path.basename(bfpPngList[0])))
+
+   # run date USA style month/day/year?
+    with open(path.join(scratchPath,"a-last-run-time.shtml"), "w" ) as f:
+        f.write(runDate.strftime("%Hz %m/%d/%Y"))
+
+
+
+    Yesterday=datetime.datetime.now() - timedelta(days=1)
+
+    lcrPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r[0-9]*_[0-9]*_[0-9]*_lcr.png")
+    if ( len(lcrPngList)>0 ):
+        lcrPngList.sort( reverse=True )
+        lcrArchiveFile=open(path.join(scratchPath,"a-6hour-hrrr-lcr-archive.shtml"), "w" )
+        for lcrPng in lcrPngList:
+            lcrPngBase=os.path.basename(lcrPng)
+            [model, dt]=mkmodeldate(lcrPngBase)
+            if( dt> Yesterday ):
+                fList.append(lcrPng)
+                lcrArchiveFile.write('<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n'.format( lcrPngBase, dt.strftime("%Y/%m/%d %H") ))
+
+
+    bfpPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r[0-9]*_[0-9]*_[0-9]*_bfp.png")
+    if (len(bfpPngList)  ):
+        bfpArchiveFile=open(path.join(scratchPath,"a-6hour-hrrr-bfp-archive.shtml"), "w" )
+        bfpPngList.sort( reverse=True )
+
+        for bfpPng in bfpPngList:
+            bfpPngBase=os.path.basename(bfpPng)
+            [model, dt]=mkmodeldate(bfpPngBase)
+            if( dt> Yesterday ):
+                fList.append(bfpPng)
+                bfpArchiveFile.write('<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n'.format( bfpPngBase, dt.strftime("%Y/%m/%d %H") ))
+
+
+    return fList
+
+def Upload(model, runDate):
+    Debug=True
+    scratchPath=path.join(lcrBase,"scratch")
+
+    fList=prepUpload(model,runDate)
+
+    if ( len(fList)==0):
+        logWrite("prepUpload: No lcr/bfp images with Date {}".format(runDate))
+        return 0
+
+    # don't overwrite if png exists
+    if (Debug):
+        cnt=len(fList)
+        print(fList);
+    else:
+        cnt=doUpload(fList, False)
+
+    logWrite("Upload() - uploaded %d png files."% cnt)
+
+    # cnt=1
+    # if at least 1 new image has been uploaded then also upload the a*.shtml files
+    if ( cnt == 0):
+        return 0
+
+    fList=[]
+
+    for fl in fRemoteFileList:
+        fl=os.path.join(  scratchPath,fl )
+        if(  os.path.exists(fl) ):
+            fList.append(fl)
+
+    if (Debug):
+        cnt=len(fList)
+        print(fList)
+    else:
+        cnt=doUpload(fList, True)
+
+
+    logWrite("Upload() - uploaded %d shtml files."% cnt)
+
+    return cnt
 
 def mkdate(datestr):
     return datetime.datetime.strptime(datestr, '%Y-%m-%d')
 
+def mkmodeldate(baseFileName):
+    idx=baseFileName.find("_")
+    model=baseFileName[0:(idx-1)]
+
+    idx=baseFileName.find(".")
+    #tmp=baseFileName[idx+2:idx+12]
+    dt=datetime.datetime.strptime(baseFileName[idx+2:idx+12],"%Y%m%d%H")
+
+    return [model, dt ]
 def getGFSTimeABS(gfsStart, fcHour):
     gfsTimeABS = gfsStart + timedelta(hours=fcHour)
     return gfsTimeABS
@@ -232,23 +336,20 @@ def Caption (ncFile, srtIndex, endIndex):
 
     # time step in hours - should be getting this from the ncFile
     step=1;
-    ncBaseFile=path.basename(ncFile)
 
-    # get product string
-    Product=ncBaseFile.split("_")[0]
+    [Product,fcDate]=mkmodeldate(os.path.basename(ncFile))
     Product=Product.upper();
 
-    # get date from file
-    Ts=ncFile[-13:-3]
-    fcDate=datetime.datetime.strptime(Ts,"%Y%m%d%H")
 
-    srtDate=fcDate.astimezone(pytz.timezone('US/Central')) + datetime.timedelta(hours=srtIndex)
-    endDate=fcDate.astimezone(pytz.timezone('US/Central')) + datetime.timedelta(hours=endIndex)
+    srtDate=fcDate.astimezone(pytz.timezone('US/Central')) + datetime.timedelta(hours=srtIndex*step)
+    endDate=fcDate.astimezone(pytz.timezone('US/Central')) + datetime.timedelta(hours=endIndex*step)
 
     # print(srtDate)
     # print(endDate)
+     # LCR maximum values through 10PM CDT Tuesday, December 5, 2023.  Generated from the 19z HRRR
+    # BFP+ maximum values through 10PM CDT Tuesday, December 5, 2023.  Generated from the 19z HRRR
 
-    title="Valid from {}z to {}z CST.  Generated from {}z {} {}".format(  srtDate.strftime("%H"), endDate.strftime("%H"),   fcDate.strftime("%H"), Product, fcDate.strftime("%m/%d/%y")  )
+    title=" maximium values through {}  Generated from {}z {}.".format( endDate.strftime("%l%p CDT %A, %B %e, %Y"),   fcDate.strftime("%H"), Product  )
     
     return title
 
@@ -405,6 +506,7 @@ if __name__ == '__main__':
     # which creates a local file in the cwd- which is later renamed with an absolute filename
     os.chdir(gfsPath)
 
+
     cret=0
     if not bSkipDownload:
         cret=doDownload()
@@ -416,7 +518,7 @@ if __name__ == '__main__':
 
 
     if(not bSkipUpload):
-        cret=ftpUpload()
+        cret=Upload()
         
     sys.exit(0);
 
