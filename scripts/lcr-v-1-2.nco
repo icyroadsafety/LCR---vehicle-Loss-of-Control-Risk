@@ -161,11 +161,11 @@ else
 if(exists(surfacetemp))
 {
   
-  surfacewb = surfacetemp * atan(0.151977f * (surfacerh + 8.313659f)^0.5f)
+  surfacewb = surfacetemp * atan(0.151977 * (surfacerh + 8.313659)^0.5)
                + atan(surfacetemp + surfacerh)
-               - atan(surfacerh - 1.676331f)
-               + 0.00391838f * (surfacerh)^1.5f * atan(0.023101f * surfacerh)
-               - 4.686035f;
+               - atan(surfacerh - 1.676331)
+               + 0.00391838 * (surfacerh)^1.5 * atan(0.023101 * surfacerh)
+               - 4.686035;
 
 
   
@@ -216,47 +216,44 @@ if(DO_LCR==1)
   lcr[time,lat,lon]=0.0f;
   lcron[time,lat,lon]=0.0f;
 
-// Set Baseline LCR from 1 to 4 based on 1-hour precipitation amounts
-// when temperatures are near or below freezing
-
    // Baseline LCR designations if precip type is anything other than snow
-  where  (ipf > 0.0f && ipf < 0.1f && surfacetemp <= 38f && surfacewb <= 34f && snptype == 0f){
+  where  (ipf > 0.0f && ipf < 0.05f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
     lcr = 1f;
     lcron = 1f;
 }
 
-  where  (ipf >= 0.1f && ipf < 0.25f && surfacetemp <= 36f && surfacewb <= 33f && snptype == 0f){
+  where  (ipf >= 0.05f && ipf < 0.1f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
     lcr = 2f;
     lcron = 1f;
 }
 
-  where  (ipf >= 0.25f && ipf < 0.5f && surfacetemp <= 36f && surfacewb <= 33f && snptype == 0f){
+  where  (ipf >= 0.1f && ipf < 0.25f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
     lcr = 3f;
     lcron = 1f;
 }
 
-  where  (ipf >= 0.5f && surfacetemp <= 36f && surfacewb <= 33f && snptype == 0f){
+  where  (ipf >= 0.25f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
     lcr = 4f;
     lcron = 1f;
 }
 
    // Baseline LCR designations if precip type is snow
-  where  (snowsfc > 0.0f && snowsfc < 0.3f && surfacetemp <= 38f && surfacewb <= 34f && snowsfc > 0f){
+  where  (snowsfc > 0f && snowsfc < 0.1f && surfacetemp <= 38f && surfacewb <= 36f && lcr < 2f){
     lcr = 1f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 0.3f && snowsfc < 0.8f && surfacetemp <= 36f && surfacewb <= 33f && snowsfc > 0f){
+  where  (snowsfc >= 0.1f && snowsfc < 0.6f && surfacetemp <= 38f && surfacewb <= 36f && lcr < 3f){
     lcr = 2f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 0.8f && snowsfc < 1.3f && surfacetemp <= 36f && surfacewb <= 33f && snowsfc > 0f){
+  where  (snowsfc >= 0.6f && snowsfc < 1.3f && surfacetemp <= 38f && surfacewb <= 36f && lcr < 4f){
     lcr = 3f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 1.3f && surfacetemp <= 36f && surfacewb <= 33f && snowsfc > 0f){
+  where  (snowsfc >= 1.3f && surfacetemp <= 38f && surfacewb <= 36f){
     lcr = 4f;
     lcron = 1f;
 }
@@ -264,7 +261,7 @@ if(DO_LCR==1)
 // Incremental LCR factors: these each add to the baseline LCR value if true
 
 // Below-freezing temperature factor: add 1 if surface temp is at or below freezing
-  where (lcron == 1f && (surfacetemp <= 32f || zrptype > 0f))
+  where (lcron == 1f && (surfacetemp <= 32.9f || zrptype > 0f))
     lcr = lcr + 1f;
      
 // Below-freezing temperature history factor: add 1 if temps have been below freezing for 6 hours
