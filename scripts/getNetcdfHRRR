@@ -205,7 +205,8 @@ def mkmodeldate(ncFile):
 
     idx=ncFileBase.find(".")
     #tmp=baseFileName[idx+2:idx+12]
-    dt=datetime.datetime.strptime(ncFileBase[idx+2:idx+12],"%Y%m%d%H")
+    # dt=datetime.datetime.strptime(ncFileBase[idx+2:idx+12],"%Y%m%d%H")
+    dt=mklongdate(ncFileBase[idx+2:idx+12])
 
     return [Model, dt ]
 def getGFSTimeABS(gfsStart, fcHour):
@@ -504,9 +505,9 @@ def doLcr(ncFile, srtIndex, endIndex):
 
  
 ##############################################################################################################
-__version__ = "0.0.42-01"
+__version__ = "1.00"
 parser = argparse.ArgumentParser(prog=__prog__,
-    description='Launch the download jobs for a set of GFS grib2 files.  Most-recent run-date and run-hour are launched by default.',
+    description='Download Netcdf Files from NOAA NOMADS server. Make Map images. Upload to web-site.',
     formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=42,width=120))
 parser.add_argument('--background', action='store_true', help='launch downloads in background (daemonize) ')
 parser.add_argument('--dryrun', action='store_true', help="show command stream but don't execute it")
