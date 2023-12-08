@@ -21,7 +21,7 @@ gfsTimeDelay = 300 # minutes after initial time before grib2 becomes available.
 __prog__ = path.splitext(path.basename(__file__))[0]
 
 
-lcrBase = "/projects/me/ICY/LCR---vehicle-Loss-of-Control-Risk"
+lcrBase = "/home/ubuntu/LCR---vehicle-Loss-of-Control-Risk"
 
 lcrLogBase =  path.join(lcrBase, "log")
 lcrBinPath = path.join(lcrBase, "scripts")
@@ -43,20 +43,22 @@ hrrrRemotePath = "/dods/hrrr"
 bVerbose=0
 
 ##############################################################################################################
-def doUpload(fList,overWrite=False):
+def doUpload(fList,type=None,overWrite=False):
+    
+    fListRemote =[]
     
     try:
       # danrobinson@ftp3.ftptoyoursite.com:/www.icyroadsafety.com/web/content/lcr/forecast
       session = ftplib.FTP('ftp3.ftptoyoursite.com','danrobinson','YXL@icY!VZsM526d')
-      session.cwd('/www.icyroadsafety.com/web/content/lcr/forecast/')
+      session.cwd('/www.icyroadsafety.com/web/content/lcr/forecast')
     except BaseException as exception:
       logWrite(exception)
       return 0
 
 
-
-    fListRemote=session.nlst('*.png')
-    fListRemote.sort()
+    if ( type and not overWrite ):     
+      fListRemote=session.nlst("*."+type)
+      fListRemote.sort()
 
 
     # fList=glob.glob(lcrPngPath+"/*[0-9]*.png")
@@ -64,7 +66,7 @@ def doUpload(fList,overWrite=False):
 
     for rFile in fList:
       rClientFile=os.path.basename(rFile)
-      if( not overWrite and  rClientFile in fListRemote):
+      if( overWrite == False and   rClientFile in fListRemote):
          continue
 
       try:
@@ -143,7 +145,9 @@ def prepUpload( Model, runDate ):
     return fList
 
 def Upload(model, runDate):
-    Debug=True
+    
+    Debug=False
+    cnt=0
     scratchPath=path.join(lcrBase,"scratch")
 
     if ( model == None or runDate == None ):
@@ -160,14 +164,15 @@ def Upload(model, runDate):
         cnt=len(fList)
         print(fList);
     else:
-        cnt=doUpload(fList, False)
+        cnt=doUpload(fList,"png", False)
 
     logWrite("Upload() - uploaded %d png files."% cnt)
 
     # cnt=1
+
     # if at least 1 new image has been uploaded then also upload the a*.shtml files
     if ( cnt == 0):
-        return 0
+       return 0
 
     fList=[]
 
@@ -180,7 +185,7 @@ def Upload(model, runDate):
         cnt=len(fList)
         print(fList)
     else:
-        cnt=doUpload(fList, True)
+        cnt=doUpload(fList,"shtml", True)
 
 
     logWrite("Upload() - uploaded %d shtml files."% cnt)
