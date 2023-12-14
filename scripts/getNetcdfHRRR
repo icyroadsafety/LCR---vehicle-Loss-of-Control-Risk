@@ -370,7 +370,7 @@ def Caption (ncFile, srtIndex, endIndex):
 
      # LCR maximum values through 10PM CDT Tuesday, December 5, 2023.  Generated from the 19z HRRR
     # BFP+ maximum values through 10PM CDT Tuesday, December 5, 2023.  Generated from the 19z HRRR
-    title=" maximum values through {}  Generated from {}z {}.".format( endDate.strftime("%l%p CDT %A, %B %e, %Y"),   fcDate.strftime("%H"), Product  )
+    title=" maximum values through {}  Generated from {}z {}.".format( endDate.strftime("%l%p CST %A, %B %e, %Y"),   fcDate.strftime("%H"), Product  )
     
     return title
 
