@@ -505,12 +505,20 @@ def doLcr(ncFile, srtIndex, endIndex):
     if ret == 0 or ret == 10:
        return 1
 
-    return 0;           
+    return 0;
 
-
-
-
- 
+##############################################################################################################
+# usgage examples
+# to download, process and upload - the latest data  from the command line
+# getNecdfHRRR -v
+# to get a specific data set from the NOMADS server use --rdata
+# getNetcdfHRRR -v --rdate=2023121510
+# to just process a specific data set
+#  getNetcdfHRRR -v   --skip-download --skip-upload --rdate=2023121510
+# to just upload the latest images to the website
+# getNetcdfHRRR -v   --skip-download  --skip-processing
+# to process and upload a specific data set
+# getNetcdfHRRR -v   --skip-download  --rdate=2023121410
 ##############################################################################################################
 __version__ = "1.00"
 parser = argparse.ArgumentParser(prog=__prog__,

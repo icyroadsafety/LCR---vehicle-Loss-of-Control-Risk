@@ -14,7 +14,7 @@ import cartopy.io.shapereader as shpreader
 
 def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_paths, variable_names, titles):
     fig, ax = plt.subplots(subplot_kw={'projection': ccrs.Mercator()}, figsize=(20, 16))
-    ax.set_extent([-127, -63.5, 19, 46.5])  
+    ax.set_extent([-127, -65, 21, 48]) 
     
     # Add map features
     ax.add_feature(cfeature.NaturalEarthFeature(
@@ -28,8 +28,9 @@ def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_path
     gl = ax.gridlines(crs=ccrs.PlateCarree(), linestyle='--', alpha=0.8)
     
     
-    color_bar1 = plt.imread('mapoverlays/bfpplus-scale3.png')
-    ax.imshow(color_bar1, extent=[-124, -71.3, 19, 24.7], transform=ccrs.PlateCarree(), alpha=1, zorder=10)  
+    color_bar1 = plt.imread('mapoverlays/bfpplus-scale7.png')
+    ax.imshow(color_bar1, extent=[-126.8, -99.7, 21.1, 27.3], transform=ccrs.PlateCarree(), alpha=1, zorder=10) 
+
 
     # Read the shapefiles for Canada and Mexico
     canada_shapefile = 'shp/CAN_adm0.shp'
@@ -70,21 +71,24 @@ def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_path
     #    timestamp = timestamp_file.read().strip()
 
     # Add timestamp to the top of the image
-    fig.text(0.5, 0.807, f'{timestamp}', ha='center', fontsize=14)
+    fig.text(0.5, 0.815, f'{timestamp}', ha='center', fontsize=14)
 
     # Add text to map scale
-    fig.text(0.231, 0.271, f'BFP: Below-Freezing Precipitation (Icy Road Warning Area)', ha='left', fontsize=10.5, color=(0/255, 9/255, 189/255))
-    fig.text(0.449, 0.271, f'NFP: Near-Freezing Precipitation (Icy Road Caution Area)', ha='left', fontsize=10.5, color=(189/255, 120/255, 0/255))
-    fig.text(0.663, 0.271, f'AFP: Above-Freezing Precipitation', ha='left', fontsize=10.5, color=(0/255, 189/255, 4/255))
-    fig.text(0.165, 0.258, f'BFP: Below 32°F', ha='left', fontsize=10.5, color=(0/255, 9/255, 189/255))
-    fig.text(0.165, 0.244, f'NFP: 32°F-38°F', ha='left', fontsize=10.5, color=(189/255, 120/255, 0/255))
-    fig.text(0.165, 0.230, f'AFP: Above 38°F', ha='left', fontsize=10.5, color=(0/255, 189/255, 4/255))
-    fig.text(0.190, 0.207, f'Surface', ha='center', fontsize=10.5, color=(71/255, 71/255, 71/255))
-    fig.text(0.190, 0.197, f'Temperature', ha='center', fontsize=10.5, color=(71/255, 71/255, 71/255))
-    fig.text(0.514, 0.197, f'Maximum 1-Hour Precipitation', ha='center', fontsize=11, color=(71/255, 71/255, 71/255))
-    fig.text(0.230, 0.210, f'0"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
-    fig.text(0.514, 0.210, f'0.05"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
-    fig.text(0.788, 0.210, f'0.1"+', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
+    fig.text(0.194, 0.281, f'Maximum 1-Hour Liquid-Equivalent Precipitation of Any Type', ha='left', fontsize=9.5, color=(255/255, 255/255, 255/255))
+    fig.text(0.367, 0.264, f'Below Critical Icing Temp', ha='left', fontsize=8, color=(168/255, 2/255, 4/255))
+    fig.text(0.367, 0.2505, f'Below-Freezing (Icy Road Warning)', ha='left', fontsize=8, color=(0/255, 9/255, 189/255))
+    fig.text(0.367, 0.237, f'Near-Freezing (Icy Road Caution)', ha='left', fontsize=8, color=(189/255, 120/255, 0/255))
+    fig.text(0.367, 0.223, f'Above Freezing (No Icing)', ha='left', fontsize=8, color=(0/255, 189/255, 4/255))
+    fig.text(0.132, 0.264, f'CIP: Below 29°F/-2°C', ha='left', fontsize=10.5, color=(168/255, 2/255, 4/255))
+    fig.text(0.132, 0.2495, f'BFP: 32°F-29°F', ha='left', fontsize=10.5, color=(0/255, 9/255, 189/255))
+    fig.text(0.132, 0.2355, f'NFP: 32°F-38°F', ha='left', fontsize=10.5, color=(189/255, 120/255, 0/255))
+    fig.text(0.132, 0.222, f'AFP: Above 38°F/33°C', ha='left', fontsize=10.5, color=(0/255, 189/255, 4/255))
+    fig.text(0.165, 0.198, f'Surface', ha='center', fontsize=8.5, color=(71/255, 71/255, 71/255))
+    fig.text(0.165, 0.190, f'Temperature', ha='center', fontsize=8.5, color=(71/255, 71/255, 71/255))
+    fig.text(0.227, 0.192, f'Maximum 1-Hour Precip Amount', ha='left', fontsize=11, color=(71/255, 71/255, 71/255))
+    fig.text(0.219, 0.204, f'0"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
+    fig.text(0.293, 0.204, f'0.05"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
+    fig.text(0.366, 0.204, f'0.1"+', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
 
     # # Read logo overlay image
     overlay2_path = 'mapoverlays/logomap.png'
@@ -111,9 +115,9 @@ os.chdir("maps");
 
 
 
-color_table_paths = ['bfpplus-afp-colors-0-to-1.tbl', 'bfpplus-nfp-colors-0-to-1.tbl', 'bfpplus-bfp-colors-0-to-1.tbl']
-variable_names = ['afp', 'nfp', 'bfp']
-titles = ['AFP Data', 'NFP Data', 'BFP Data']
+color_table_paths = ['bfpplus-afp-colors-0-to-1.tbl', 'bfpplus-nfp-colors-0-to-1.tbl', 'bfpplus-bfp-colors-0-to-1.tbl', 'bfpplus-cip-colors-0-to-1.tbl']
+variable_names = ['afp', 'nfp', 'bfp', 'cip']
+titles = ['AFP Data', 'NFP Data', 'BFP Data', 'CIP Data']
 
 
 
