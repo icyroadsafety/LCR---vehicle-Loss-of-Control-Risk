@@ -224,43 +224,43 @@ if(DO_LCR==1)
 // when temperatures are near or below freezing
 
    // Baseline LCR designations if precip type is anything other than snow
-  where  (ipf > 0.0f && ipf < 0.1f && surfacetemp <= 38f && surfacewb <= 34f && snowsfc == 0f){
+  where  (ipf > 0.0f && ipf < 0.05f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
     lcr = 1f;
     lcron = 1f;
 }
 
-  where  (ipf >= 0.1f && ipf < 0.25f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc == 0f){
+  where  (ipf >= 0.05f && ipf < 0.1f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
     lcr = 2f;
     lcron = 1f;
 }
 
-  where  (ipf >= 0.25f && ipf < 0.5f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc == 0f){
+  where  (ipf >= 0.1f && ipf < 0.25f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
     lcr = 3f;
     lcron = 1f;
 }
 
-  where  (ipf >= 0.5f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc == 0f){
+  where  (ipf >= 0.25f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
     lcr = 4f;
     lcron = 1f;
 }
 
    // Baseline LCR designations if precip type is snow
-  where  (snowsfc > 0.0f && snowsfc < 0.3f && surfacetemp <= 38f && surfacewb <= 34f && snowsfc > 0f && lcr < 2){
+  where  (snowsfc > 0.0f && snowsfc < 0.1f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f && lcr < 2){
     lcr = 1f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 0.3f && snowsfc < 0.8f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc > 0f && lcr < 3){
+  where  (snowsfc >= 0.1f && snowsfc < 0.6f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f && lcr < 3){
     lcr = 2f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 0.8f && snowsfc < 1.3f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc > 0f && lcr < 4){
+  where  (snowsfc >= 0.6f && snowsfc < 1.3f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f && lcr < 4){
     lcr = 3f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 1.3f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc > 0f){
+  where  (snowsfc >= 1.3f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f){
     lcr = 4f;
     lcron = 1f;
 }
