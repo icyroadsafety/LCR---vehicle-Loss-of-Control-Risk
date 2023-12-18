@@ -43,7 +43,7 @@ BfpCaption="BFP+ ${Caption}"
 [[ $DEBUG -gt 0 ]] &&  echo "$0: outputLcrImage=$outputLcrImage num args=${#} LcrCaption=${LcrCaption}"
 
 
-vars="-v afp,bfp,nfp,lcr";
+vars="-v afp,bfp,nfp,lcr,cip";
 
 # cut down by time according to  indicies
 CMD="ncks -O -d time,${srtIndex},${endIndex} $inputNcFile ${tmpNcFile}"
@@ -112,7 +112,8 @@ fi
 
 wait
 
-[[ !  -e $outputLcrImage ]] ||  [[ !  -e $outputBfpImage ]] && exit 5
+[[ !  -e $outputLcrImage ]] && exit 5
+[[ !  -e $outputBfpImage ]] && exit 5
 
 # delete temporary file
 [[ -e $lcrNcFile ]] && rm $lcrNcFile;
