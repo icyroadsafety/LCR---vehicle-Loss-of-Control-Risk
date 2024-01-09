@@ -73,7 +73,7 @@ def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_path
     fig.text(0.5, 0.815, f'{timestamp}', ha='center', fontsize=14)
 
     # Add text to map scale
-    fig.text(0.194, 0.281, f'Maximum 1-Hour Liquid-Equivalent Precipitation of Any Type', ha='left', fontsize=9.5, color=(255/255, 255/255, 255/255))
+    fig.text(0.194, 0.281, f'Precipitation of Any Type vs Surface Temperature Environment', ha='left', fontsize=9.5, color=(255/255, 255/255, 255/255))
     fig.text(0.367, 0.264, f'Critical Icing Temp (Highest Risk)', ha='left', fontsize=8, color=(168/255, 2/255, 4/255))
     fig.text(0.367, 0.2505, f'Below-Freezing (Icy Road Warning)', ha='left', fontsize=8, color=(0/255, 9/255, 189/255))
     fig.text(0.367, 0.237, f'Near-Freezing (Icy Road Caution)', ha='left', fontsize=8, color=(189/255, 120/255, 0/255))
@@ -90,8 +90,8 @@ def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_path
     fig.text(0.219, 0.204, f'0"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
     fig.text(0.293, 0.204, f'0.05"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
     fig.text(0.366, 0.204, f'0.1"+', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
-    fig.text(0.53, 0.243, f'LCR v1.2 :', ha='left', fontsize=15, color=(0/255, 0/255, 0/255))
-    fig.text(0.587, 0.243, f'BFP+', ha='left', fontsize=15, color=(7/255, 18/255, 119/255))
+    fig.text(0.53, 0.243, f'LCR v1.2.1 :', ha='left', fontsize=15, color=(0/255, 0/255, 0/255))
+    fig.text(0.6, 0.243, f'BFP+', ha='left', fontsize=15, color=(7/255, 18/255, 119/255))
     fig.text(0.53, 0.233, f'https://icyroadsafety.com/lcr/', ha='left', fontsize=9.5, color=(0/255, 0/255, 0/255))
 
     # # Read logo overlay image

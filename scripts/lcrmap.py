@@ -118,7 +118,7 @@ overlay3 = plt.imread(overlay3_path)
 ax.imshow(overlay3, extent=[-126.5, -116.5, 21, 25.6],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
 
 # # Print Scale and Description Text
-fig.text(0.135, 0.245, f'LCR v1.2', ha='left', fontsize=15, color=(111/255, 111/255, 111/255))
+fig.text(0.135, 0.245, f'LCR v1.2.1', ha='left', fontsize=15, color=(111/255, 111/255, 111/255))
 fig.text(0.135, 0.235, f'Risk of vehicle loss-of-control', ha='left', fontsize=9, color=(0/255, 0/255, 0/255))
 fig.text(0.135, 0.228, f'due to reduced surface friction', ha='left', fontsize=9, color=(0/255, 0/255, 0/255))
 fig.text(0.135, 0.221, f'conditions from winter precipitation.', ha='left', fontsize=9, color=(0/255, 0/255, 0/255))
