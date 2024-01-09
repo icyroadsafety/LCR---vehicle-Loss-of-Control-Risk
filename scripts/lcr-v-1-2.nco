@@ -298,14 +298,17 @@ if(DO_LCR==1)
     lcr = lcr + 1f;
 
 // Freezing fog factor: Designate LCR during high humidity and below freezing temps
-  where (lcron =! 1f && surfacerh > 92f && surfacetemp <= 31f)
+  where (lcron < 1f && surfacerh > 90f && surfacetemp <= 31f)
     lcr = 1f;
 
-  where (lcron =! 1f && surfacerh > 98f && surfacetemp <= 29f)
+  where (lcron < 1f && surfacerh > 93f && surfacetemp <= 29f)
     lcr = 2f;
 
-  where (lcron =! 1f && surfacerh > 99f && surfacetemp <= 27f)
+  where (lcron < 1f && surfacerh > 96f && surfacetemp <= 27f)
     lcr = 3f;
+
+  where (lcron < 1f && surfacerh > 98f && surfacetemp <= 27f)
+    lcr = 4f;
 
 // Set above-critical temp CIP gridpoints to zero so there is 
 // no CIP plotted where temps are above 29F
