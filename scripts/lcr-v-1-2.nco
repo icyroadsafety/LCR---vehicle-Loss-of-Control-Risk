@@ -224,7 +224,7 @@ if(DO_LCR==1)
 // when temperatures are near or below freezing
 
    // Baseline LCR designations if precip type is anything other than snow
-  where  (ipf > 0.0f && ipf < 0.05f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
+  where  (ipf > 0.0015f && ipf < 0.05f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
     lcr = 1f;
     lcron = 1f;
 }
