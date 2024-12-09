@@ -121,6 +121,11 @@ def prepUpload_6( Model, runDate ):
 
     Yesterday=datetime.datetime.now() - timedelta(days=1)
 
+    fList+= globToFile("/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_lcr.png", "a-6hour-hrrr-lcr-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', Yesterday )
+    fList+= globToFile("/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_bfp.png", "a-6hour-hrrr-bfp-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', Yesterday)
+
+    return fList
+
     lcrPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_lcr.png")
     if ( len(lcrPngList)>0 ):
         lcrPngList.sort( reverse=True )
@@ -147,6 +152,26 @@ def prepUpload_6( Model, runDate ):
 
 
     return fList
+
+def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
+    scratchPath = path.join(lcrBase, "scratch")
+    fList = []
+    PngList=glob.glob(lcrPngPath+globPattern)
+    if len(PngList):
+        ArchiveFileHandle=open(path.join(scratchPath,ArchiveFile), "w" )
+        PngList.sort( reverse=True )
+
+        for Png in PngList:
+            PngBase=os.path.basename(Png)
+            [model, dt]=mkmodeldate(PngBase)
+            if( dt> BackDate ):
+                fList.append(Png)
+                ArchiveFileHandle.write( TextSkeleton.format( PngBase, dt.strftime("%Y/%m/%d %H") ))
+
+    return fList
+
+
+
 
 def prepUpload_24( Model, runDate ):
 
