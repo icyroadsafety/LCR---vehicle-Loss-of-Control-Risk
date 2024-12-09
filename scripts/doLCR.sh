@@ -86,7 +86,7 @@ fi
 
 
 
-CMD="python scripts/lcrmap.py $lcrNcFile $outputLcrImage ${LcrCaption@Q}  &> /tmp/lcrmap.txt &"
+CMD="python scripts/lcrmap.py $lcrNcFile $outputLcrImage ${LcrCaption@Q}  &> /tmp/lcrmap.txt"
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 # run command in backround
 eval ${CMD} 
