@@ -153,22 +153,6 @@ def prepUpload_6( Model, runDate ):
 
     return fList
 
-def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
-    scratchPath = path.join(lcrBase, "scratch")
-    fList = []
-    PngList=glob.glob(lcrPngPath+globPattern)
-    if len(PngList):
-        ArchiveFileHandle=open(path.join(scratchPath,ArchiveFile), "w" )
-        PngList.sort( reverse=True )
-
-        for Png in PngList:
-            PngBase=os.path.basename(Png)
-            [model, dt]=mkmodeldate(PngBase)
-            if( dt> BackDate ):
-                fList.append(Png)
-                ArchiveFileHandle.write( TextSkeleton.format( PngBase, dt.strftime("%Y/%m/%d %H") ))
-
-    return fList
 
 
 
@@ -202,36 +186,27 @@ def prepUpload_24( Model, runDate ):
     # 4 files in 24 hours so go back six days ?
     BackDate=datetime.datetime.now() - timedelta(days=6)
 
-    lcrPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r[0-9]*_[0-9]*_[0-9][0-9]_lcr.png")
-    if ( len(lcrPngList)>0 ):
-        lcrPngList.sort( reverse=True )
-        lcrArchiveFile=open(path.join(scratchPath,"a-24hour-hrrr-lcr-archive.shtml"), "w" )
-        for lcrPng in lcrPngList:
-            lcrPngBase=os.path.basename(lcrPng)
-            [model, dt]=mkmodeldate(lcrPngBase)
-            if( dt> BackDate ):
-                fList.append(lcrPng)
-                lcrArchiveFile.write('<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n'.format( lcrPngBase, dt.strftime("%Y/%m/%d %H") ))
-
-
-    bfpPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r[0-9]*_[0-9]*_[0-9][0-9]_bfp.png")
-    if (len(bfpPngList)  ):
-        bfpArchiveFile=open(path.join(scratchPath,"a-24hour-hrrr-bfp-archive.shtml"), "w" )
-        bfpPngList.sort( reverse=True )
-
-        for bfpPng in bfpPngList:
-            bfpPngBase=os.path.basename(bfpPng)
-            [model, dt]=mkmodeldate(bfpPngBase)
-            if( dt> BackDate ):
-                fList.append(bfpPng)
-                bfpArchiveFile.write('<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n'.format( bfpPngBase, dt.strftime("%Y/%m/%d %H") ))
-
+    fList+= globToFile("/hrrr_sfc.r[0-9]*_[0-9]_[0-9][0-9]_lcr.png", "a-24hour-hrrr-lcr-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', BackDate )
+    fList+= globToFile("/hrrr_sfc.r[0-9]*_[0-9]_[0-9][0-9]_bfp.png", "a-24hour-hrrr-bfp-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', BackDate)
 
     return fList
 
+def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
+    scratchPath = path.join(lcrBase, "scratch")
+    fList = []
+    PngList=glob.glob(lcrPngPath+globPattern)
+    if len(PngList) >0 :
+        ArchiveFileHandle=open(path.join(scratchPath,ArchiveFile), "w" )
+        PngList.sort( reverse=True )
 
+        for Png in PngList:
+            PngBase=os.path.basename(Png)
+            [model, dt]=mkmodeldate(PngBase)
+            if( dt> BackDate ):
+                fList.append(Png)
+                ArchiveFileHandle.write( TextSkeleton.format( PngBase, dt.strftime("%Y/%m/%d %H") ))
 
-
+    return fList
 
 
 
@@ -667,11 +642,13 @@ if __name__ == '__main__':
     if(not ncUserFile):
         sys.exit(1)
 
-
     # hard coded indices temporary hack    
     if not bSkipProcessing and ncUserFile:
-        cret=doLcr(ncUserFile,2,9)
-
+        # process hourly
+        cret = doLcr(ncUserFile, 2, 9)
+        # run 24 hour model twice a day
+        if pDate.hour ==6 or pDate.hour ==18:
+            cret=doLcr(ncUserFile,2,25)
 
     if(not bSkipUpload):
         cret=Upload(pModel,pDate)
