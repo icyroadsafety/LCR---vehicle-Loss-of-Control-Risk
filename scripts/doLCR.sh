@@ -18,6 +18,8 @@ srtIndex=$3
 endIndex=$4
 Caption=$5
 
+cntIndex=$(( endIndex - srtIndex -1 ))
+
 plainName=$( basename $inputNcFile );
 
 #helps with the script names - but still need absolute paths for lcrmap and bfpmap
@@ -73,8 +75,9 @@ ncdump -k $ncoNcFile >& /tmp/ncdump.txt || exit 1
 ncks -M $vars $ncoNcFile  >& /tmp/ncks.txt || exit 1
 
 
+
 # find the max values of afp,bfp,nfp,lcr along the time dimension 
-CMD="ncwa -O  $vars -a time -y max -d time,1,6 $ncoNcFile $lcrNcFile"
+CMD="ncwa -O  $vars -a time -y max -d time,1,${cntIndex} $ncoNcFile $lcrNcFile"
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 # do the deed
 $CMD
