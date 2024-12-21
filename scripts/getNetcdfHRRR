@@ -126,36 +126,6 @@ def prepUpload_6( Model, runDate ):
 
     return fList
 
-    lcrPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_lcr.png")
-    if ( len(lcrPngList)>0 ):
-        lcrPngList.sort( reverse=True )
-        lcrArchiveFile=open(path.join(scratchPath,"a-6hour-hrrr-lcr-archive.shtml"), "w" )
-        for lcrPng in lcrPngList:
-            lcrPngBase=os.path.basename(lcrPng)
-            [model, dt]=mkmodeldate(lcrPngBase)
-            if( dt> Yesterday ):
-                fList.append(lcrPng)
-                lcrArchiveFile.write('<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n'.format( lcrPngBase, dt.strftime("%Y/%m/%d %H") ))
-
-
-    bfpPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_bfp.png")
-    if (len(bfpPngList)  ):
-        bfpArchiveFile=open(path.join(scratchPath,"a-6hour-hrrr-bfp-archive.shtml"), "w" )
-        bfpPngList.sort( reverse=True )
-
-        for bfpPng in bfpPngList:
-            bfpPngBase=os.path.basename(bfpPng)
-            [model, dt]=mkmodeldate(bfpPngBase)
-            if( dt> Yesterday ):
-                fList.append(bfpPng)
-                bfpArchiveFile.write('<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n'.format( bfpPngBase, dt.strftime("%Y/%m/%d %H") ))
-
-
-    return fList
-
-
-
-
 
 def prepUpload_24( Model, runDate ):
 
