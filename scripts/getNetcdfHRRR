@@ -183,7 +183,7 @@ def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
 
 def Upload(model, runDate):
     
-    Debug=True
+    Debug=False
     cnt=0
     scratchPath=path.join(lcrBase,"scratch")
 
@@ -616,8 +616,8 @@ if __name__ == '__main__':
     if not bSkipProcessing and ncUserFile:
         # process hourly
         cret = doLcr(ncUserFile, 2, 9)
-        # run 24 hour model twice a day
-        if pDate.hour ==6 or pDate.hour ==18:
+        # run 24 hour model four times a day
+        if pDate.hour in [0, 6, 12, 18]:
             cret=doLcr(ncUserFile,2,25)
 
     if(not bSkipUpload):
