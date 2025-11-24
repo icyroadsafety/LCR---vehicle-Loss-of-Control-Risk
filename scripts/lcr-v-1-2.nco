@@ -54,6 +54,7 @@ if(exists(gustsfc)){
 // total precipitation
 if(exists(apcpsfc))
 {
+
   qpf= apcpsfc * 0.039370f; 
   qpf@units="inches";
   qpf@long_name="**Accumulated precipitation [inches]";
@@ -61,9 +62,11 @@ if(exists(apcpsfc))
   // make fresh copy of variables
   ipf=qpf;
   // decumulate - subtract from each step the previous step
-  ipf(1:,:,:)=qpf(1:,:,:) - qpf(0:-2,:,:);
-  ipf@units="inches";
-  ipf@long_name="**1-hour precipitation [inches]";
+  // only if the model type is gfs or nam
+  if ( @NoaaType == 1 || @NoaaType == 2 )
+     ipf(1:,:,:)=qpf(1:,:,:) - qpf(0:-2,:,:);
+  // ipf@units="inches";
+  // ipf@long_name="**1-hour precipitation [inches]";
 }
 
 // Determine if the more accurate asnowsfc variable is present. If yes, decumulate it. 
@@ -77,10 +80,10 @@ if(exists(asnowsfc))
 
     // make fresh copy of variables
   sipf=sqpf;
-    // decumulate - subtract from each step the previous step
-  sipf(1:,:,:)=sqpf(1:,:,:) - sqpf(0:-2,:,:);
-  sipf@units="inches";
-  sipf@long_name="**1-hour snowfall [inches]";
+      // decumulate - subtract from each step the previous step
+    sipf(1:,:,:)=sqpf(1:,:,:) - sqpf(0:-2,:,:);
+    sipf@units="inches";
+    sipf@long_name="**1-hour snowfall [inches]";
   snowsfc=sipf;
     // Ensure that categorical precip type is set to snow if asnowsfc value is greater than zero
   where (sipf>0f)
@@ -224,43 +227,43 @@ if(DO_LCR==1)
 // when temperatures are near or below freezing
 
    // Baseline LCR designations if precip type is anything other than snow
-  where  (ipf > 0.0015f && ipf < 0.05f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
+  where  (ipf > 0.003f && ipf < 0.05f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc == 0f){
     lcr = 1f;
     lcron = 1f;
 }
 
-  where  (ipf >= 0.05f && ipf < 0.1f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
+  where  (ipf >= 0.05f && ipf < 0.1f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc == 0f){
     lcr = 2f;
     lcron = 1f;
 }
 
-  where  (ipf >= 0.1f && ipf < 0.25f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
+  where  (ipf >= 0.1f && ipf < 0.25f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc == 0f){
     lcr = 3f;
     lcron = 1f;
 }
 
-  where  (ipf >= 0.25f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc == 0f){
+  where  (ipf >= 0.25f && surfacetemp <= 36f && surfacewb <= 34f && snowsfc == 0f){
     lcr = 4f;
     lcron = 1f;
 }
 
    // Baseline LCR designations if precip type is snow
-  where  (snowsfc > 0.0f && snowsfc < 0.1f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f && lcr < 2){
+  where  (snowsfc > 0.05f && snowsfc < 0.3f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f && lcr < 2){
     lcr = 1f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 0.1f && snowsfc < 0.6f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f && lcr < 3){
+  where  (snowsfc >= 0.3f && snowsfc < 0.8f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f && lcr < 3){
     lcr = 2f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 0.6f && snowsfc < 1.3f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f && lcr < 4){
+  where  (snowsfc >= 0.8f && snowsfc < 1.5f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f && lcr < 4){
     lcr = 3f;
     lcron = 1f;
 }
 
-  where  (snowsfc >= 1.3f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f){
+  where  (snowsfc >= 1.5f && surfacetemp <= 38f && surfacewb <= 36f && snowsfc > 0f){
     lcr = 4f;
     lcron = 1f;
 }
@@ -280,8 +283,12 @@ if(DO_LCR==1)
     lcr = lcr + 2f;
 
 // Freezing rain or freezing drizzle factor: add 2 if ptype is freezing rain
-  where  (lcron == 1f && zrptype > 0f)
+  where  (lcron == 1f && zrptype > 0f && ipf > 0.003f)
     lcr = lcr + 2f;
+
+// Limit LCR to 7 outside of the southern US when ptype is snow with no freezing rain
+  where (lcron == 1f && lat > 35f && snptype == 1f && lcr > 7f && zrptype == 0f)
+    lcr = 7f;
 
 // Wind factor: add 1 if wind gusts are over 20mph and LCR is at 5 or above
   where  (lcron == 1f && surfacewind >= 20f && lcr >= 5f)
@@ -298,13 +305,19 @@ if(DO_LCR==1)
     lcr = lcr + 1f;
 
 // Freezing fog factor: Designate LCR during high humidity and below freezing temps
-  where (lcron < 1f && surfacerh > 90f && surfacetemp <= 31f)
+  where (lcron < 1f && surfacerh > 90f && surfacetemp <= 32f)
     lcr = 1f;
 
-  where (lcron < 1f && surfacerh > 93f && surfacetemp <= 29f)
+  where (lcron < 1f && surfacerh > 93f && surfacetemp <= 30f)
+    lcr = 2f;
+	
+  where (lcron < 1f && surfacerh > 97f && surfacetemp <= 32f)
     lcr = 2f;
 
-  where (lcron < 1f && surfacerh > 96f && surfacetemp <= 27f)
+  where (lcron < 1f && surfacerh > 96f && surfacetemp <= 29f)
+    lcr = 3f;
+	
+  where (lcron < 1f && surfacerh > 98f && surfacetemp <= 30f)
     lcr = 3f;
 
   where (lcron < 1f && surfacerh > 98f && surfacetemp <= 27f)
@@ -321,6 +334,9 @@ if(DO_LCR==1)
     bfp = 0.0f;
   where (surfacetemp <= 29.9f)
     bfp = 0.0f;
+// Set BFP to zero below the cutoff threshold	
+  where (bfp < 0.003f)
+    bfp = 0.0f;
 
 // Set below-32F and above-38F NFP gridpoints to zero so there is 
 // no NFP plotted where temps are below 32F or above 38F
@@ -329,11 +345,23 @@ if(DO_LCR==1)
 
   where (surfacetemp > 38f)
     nfp = 0.0f;
+	
+// Set NFP to zero below the cutoff threshold	
+  where (nfp < 0.003f)
+    nfp = 0.0f;
 
 // Set below-38F AFP gridpoints to zero so there is 
 // no AFP plotted where temps are below 38F
   where (surfacetemp <= 38f)
     afp = 0.0f;
+	
+// Set AFP to zero below the cutoff threshold	
+  where (afp < 0.003f)
+    afp = 0.0f;
+	
+// Set CIP to zero below the cutoff threshold	
+  where (cip < 0.003f)
+    cip = 0.0f;
 
 // Limit LCR to 3 when skies are clear, used to show 
 // frost icing potential when no precipitation is present
