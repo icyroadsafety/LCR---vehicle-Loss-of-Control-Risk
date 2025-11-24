@@ -90,7 +90,7 @@ def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_path
     fig.text(0.219, 0.204, f'0"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
     fig.text(0.293, 0.204, f'0.05"', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
     fig.text(0.366, 0.204, f'0.1"+', ha='center', fontsize=14, color=(0/255, 0/255, 0/255))
-    fig.text(0.53, 0.243, f'LCR v1.2.1 :', ha='left', fontsize=15, color=(0/255, 0/255, 0/255))
+    fig.text(0.53, 0.243, f'LCR v1.2.2 :', ha='left', fontsize=15, color=(0/255, 0/255, 0/255))
     fig.text(0.6, 0.243, f'BFP+', ha='left', fontsize=15, color=(7/255, 18/255, 119/255))
     fig.text(0.53, 0.233, f'https://icyroadsafety.com/lcr/', ha='left', fontsize=9.5, color=(0/255, 0/255, 0/255))
 
