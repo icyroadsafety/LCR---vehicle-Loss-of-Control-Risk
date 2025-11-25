@@ -1,0 +1,46 @@
+/*******************************************************
+* Merges BFP+ variables into one nc file while separating
+* each variable by 100
+* usage ncap2 -4  -A  -S scripts/bfpmerge.nco in.nc out.nc
+*******************************************************/
+
+*DBG=1;
+*CELSIUSTOFAHRENHEIT=1;
+*DO_BFPM=1;
+
+
+// Assign merge variables 
+if(exists(afp)){
+   afpm=afp;
+}
+if(exists(nfp)){
+   nfpm=nfp + 100f;
+}
+if(exists(bfp)){
+   bfpm=bfp + 200f;
+}
+if(exists(cip)){
+   cipm=cip + 300f;
+}
+
+if(DO_BFPM==1)
+{  
+  bfpmerged[lat,lon]=0.0f;
+  
+  where  (afp > 0f){
+    bfpmerged = afpm;
+}
+  where  (nfp > 0f){
+    bfpmerged = nfpm;
+}
+  where  (bfp > 0f){
+    bfpmerged = bfpm;
+}
+  where  (cip > 0f){
+    bfpmerged = cipm;
+}
+  where  (bfpmerged <= 0.003f){
+    bfpmerged = 0f;
+}
+}
+
