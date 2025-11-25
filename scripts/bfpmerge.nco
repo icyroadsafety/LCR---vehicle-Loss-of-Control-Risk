@@ -8,7 +8,7 @@
 *CELSIUSTOFAHRENHEIT=1;
 *DO_BFPM=1;
 
-
+/*
 // Assign merge variables 
 if(exists(afp)){
    afpm=afp;
@@ -22,25 +22,30 @@ if(exists(bfp)){
 if(exists(cip)){
    cipm=cip + 300f;
 }
+*/
 
-if(DO_BFPM==1)
-{  
-  bfpmerged[lat,lon]=0.0f;
+
+bfpmerged=afp;  
+// zero out 
+bfpmerged=0.0f;
   
-  where  (afp > 0f){
-    bfpmerged = afpm;
-}
-  where  (nfp > 0f){
-    bfpmerged = nfpm;
-}
-  where  (bfp > 0f){
-    bfpmerged = bfpm;
-}
-  where  (cip > 0f){
-    bfpmerged = cipm;
-}
-  where  (bfpmerged <= 0.003f){
-    bfpmerged = 0f;
-}
-}
+bfpmerged@long_name="BFP+ Merged Variable";
+
+where (afp > 0f)
+  bfpmerged = afp;
+
+where (nfp > 0f)
+  bfpmerged = nfp+100f;
+
+where (bfp > 0f)
+  bfpmerged = bfp+200f;
+
+where (cip > 0f)
+  bfpmerged = cip+300f;
+
+
+where (bfpmerged <= 0.003f)
+  bfpmerged = 0f;
+
+
 
