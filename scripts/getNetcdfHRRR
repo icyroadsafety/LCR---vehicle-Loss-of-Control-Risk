@@ -26,18 +26,19 @@ DEBUG=True
 __prog__ = os.path.basename(__file__)
 
 # looking for the root directory of scripts - this is lcrBase
-lcrBase= os.path.dirname(os.path.dirname(__file__))
+lcrBase= os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# lcrBase = "/projects/me/ICY/LCR---vehicle-Loss-of-Control-Risk"
+lcrLogBase =  path.join(lcrBase, "log")
+logFile = path.join(lcrLogBase, "hrrr-download.log")
+log=open(logFile,"a")
+
+
 
 lcrBinPath = "scripts"
 lcrPngPath = "png"
 gfsPath = "hrrr_nc_data"
 scratchPath = "scratch"
 
-lcrLogBase =  path.join(lcrBase, "log")
-logFile = path.join(lcrLogBase, "hrrr-download.log")
-log=open(logFile,"a")
 
 
 
@@ -760,8 +761,9 @@ if __name__ == '__main__':
     ncUserFile=None
     pModel="hrrr"
 
-    #its best to be located in the gfs_data directory as in the shell script there is wget 
-    # which creates a local file in the cwd- which is later renamed with an absolute filename
+    
+    # all files directories kml, png, scratch, log, hrrr_nc_data are relative to lcrBase, the project root
+    # and shell scripts are executed from there too
     os.chdir(lcrBase)
 
     # a user specified file
