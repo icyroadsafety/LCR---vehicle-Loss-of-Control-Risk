@@ -13,10 +13,11 @@
 #
 
 
+
 DEBUG=0;
 
 serverpath=$1;
-fullfilename=$2;
+localfilename=$2;
 type=$3
 
 model=$5
@@ -85,24 +86,24 @@ esac
 #deal with nc file here
 if [ "$type" = "nc" ];then
     
-   CMD="ncks -4 -L 1  $ncks_flags  $dtime -v $lcr3vars $serverpath $fullfilename";
+   CMD="ncks -4 -L 1  $ncks_flags  $dtime -v $lcr3vars $serverpath $localfilename";
    [ $DEBUG -gt 0 ] && echo "$CMD"
    # do command
    $CMD
    
-   if [ ! -e $fullfilename ]; then 
+   if [ ! -e $localfilename ]; then 
     exit 1  
   fi  
    # check file for errors
-  if grep -q '^Error ' $fullfilename   ; then
-    rm $fullfilename; 
+  if grep -q '^Error ' $localfilename   ; then
+    rm $localfilename; 
     exit 1  
   fi
 
   
   # delete missing_value as _FillValue is present
   # set global@NoaaType  
-  ncatted -a missing_value,,d,, -a NoaaType,global,c,i,"$NoaaType" $fullfilename;
+  ncatted -a missing_value,,d,, -a NoaaType,global,c,i,"$NoaaType" $localfilename;
 
   exit 0;  
 fi
@@ -113,13 +114,13 @@ case $type in
 
 # info file about Data
 info)
-   wget "$wget_flags"  $serverpath -O  $fullfilename;
+   wget "$wget_flags"  $serverpath -O  $localfilename;
    result="GOOD";
 ;;
 # Data structure
 dds)
-   wget "$wget_flags" $serverpath -O $fullfilename;
-   if  head -1 $fullfilename | grep -iq '^Dataset' ; then
+   wget "$wget_flags" $serverpath -O $localfilename;
+   if  head -1 $localfilename | grep -iq '^Dataset' ; then
      result="GOOD";
    else
      result="BAD";
@@ -128,8 +129,8 @@ dds)
 
 # Data Attributes Structure
 das)
-   wget "$wget_flags"  $serverpath -O $fullfilename "$wget_flag" ;
-   if  head -1 $fullfilename | grep -iq '^Attributes' ; then
+   wget "$wget_flags"  $serverpath -O $localfilename "$wget_flag" ;
+   if  head -1 $localfilename | grep -iq '^Attributes' ; then
      result='GOOD';
    else
     result="BAD"
@@ -139,7 +140,7 @@ das)
 esac
 
 if [ "$result" = "BAD" ] ; then 
-    rm $fullfilename;
+    rm $localfilename;
     exit 1
 fi
 
