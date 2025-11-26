@@ -6,23 +6,6 @@
 
 *DBG=1;
 *CELSIUSTOFAHRENHEIT=1;
-*DO_BFPM=1;
-
-/*
-// Assign merge variables 
-if(exists(afp)){
-   afpm=afp;
-}
-if(exists(nfp)){
-   nfpm=nfp + 100f;
-}
-if(exists(bfp)){
-   bfpm=bfp + 200f;
-}
-if(exists(cip)){
-   cipm=cip + 300f;
-}
-*/
 
 
 bfpmerged=afp;  
