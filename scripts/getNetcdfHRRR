@@ -105,20 +105,14 @@ def prepUpload_6( Model, runDate ):
     lcrPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r{0}_[0-9]_[0-9]_lcr.png".format(runDateStr))
     bfpPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r{0}_[0-9]_[0-9]_bfp.png".format(runDateStr))
 
-    if( len(lcrPngList)==0 or len(bfpPngList)==0 ):
-        return []
 
-    linkSkeleton='<a href="/lcr/forecast/{0}"><img src="/lcr/forecast/{0}" style="width:100%;"></a>'
-    with open(path.join(scratchPath,"a-6hour-hrrr-lcr.shtml"), "w" ) as f:
-        f.write(linkSkeleton.format(os.path.basename(lcrPngList[0])))
+    # remember shtml file can get deleted 
+    if SingleToFile("a-6hour-hrrr-lcr.shtml",'<a href="/lcr/forecast/{0}"><img src="/lcr/forecast/{0}" style="width:100%;"></a>', lcrPngList, True):
+        fList.append( lcrPngList[0] )        
 
-    with open(path.join(scratchPath,"a-6hour-hrrr-bfp.shtml"), "w" ) as f:
-        f.write(linkSkeleton.format(os.path.basename(bfpPngList[0])))
-
-   # run date USA style month/day/year?
-    with open(path.join(scratchPath,"a-last-run-time.shtml"), "w" ) as f:
-        f.write(runDate.strftime("%Hz %m/%d/%Y"))
-
+    # remember shtml file can get deleted 
+    if SingleToFile("a-6hour-hrrr-bfp.shtml",'<a href="/lcr/forecast/{0}"><img src="/lcr/forecast/{0}" style="width:100%;"></a>', bfpPngList, True):
+        fList.append( bfpPngList[0] )        
 
 
     Yesterday=datetime.datetime.now() - timedelta(days=1)
@@ -137,24 +131,18 @@ def prepUpload_24( Model, runDate ):
 
     runDateStr=runDate.strftime("%Y%m%d%H")
 
-    scratchPath=path.join(lcrBase,"scratch")
 
     lcrPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r{0}_[0-9]*_[0-9][0-9]_lcr.png".format(runDateStr))
     bfpPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r{0}_[0-9]*_[0-9][0-9]_bfp.png".format(runDateStr))
 
-    if( len(lcrPngList)==0 or len(bfpPngList)==0 ):
-        return []
+    # remember shtml file can get deleted 
+    if SingleToFile("a-24hour-hrrr-lcr.shtml",'<a href="/lcr/forecast/{0}"><img src="/lcr/forecast/{0}" style="width:100%;"></a>', lcrPngList, True):
+        fList.append( lcrPngList[0] )        
 
-    linkSkeleton='<a href="/lcr/forecast/{0}"><img src="/lcr/forecast/{0}" style="width:100%;"></a>'
-    with open(path.join(scratchPath,"a-24hour-hrrr-lcr.shtml"), "w" ) as f:
-        f.write(linkSkeleton.format(os.path.basename(lcrPngList[0])))
+    # remember shtml file can get deleted 
+    if SingleToFile("a-24hour-hrrr-bfp.shtml",'<a href="/lcr/forecast/{0}"><img src="/lcr/forecast/{0}" style="width:100%;"></a>', bfpPngList, True):
+        fList.append( bfpPngList[0] )        
 
-    with open(path.join(scratchPath,"a-24hour-hrrr-bfp.shtml"), "w" ) as f:
-        f.write(linkSkeleton.format(os.path.basename(bfpPngList[0])))
-
-   # run date USA style month/day/year?
-    with open(path.join(scratchPath,"a-24last-run-time.shtml"), "w" ) as f:
-        f.write(runDate.strftime("%Hz %m/%d/%Y"))
 
 
     # 4 files in 24 hours so go back six days ?
@@ -172,8 +160,6 @@ def prepUpload_6_kml( Model, runDate ):
 
     runDateStr=runDate.strftime("%Y%m%d%H")
     kmlPath = path.join(lcrBase,"kml")
-    
-    scratchPath=path.join(lcrBase,"scratch")
 
     if not os.path.exists(kmlPath):
         return fList
@@ -183,26 +169,17 @@ def prepUpload_6_kml( Model, runDate ):
     lcrKmlList = glob.glob(kmlPath+"/hrrr_sfc.r{0}_[0-9]_[0-9]_lcr.kml".format(runDateStr))
     bfpKmlList = glob.glob(kmlPath+"/hrrr_sfc.r{0}_[0-9]_[0-9]_bfp.kml".format(runDateStr))
 
-    htmlFile = path.join(scratchPath,"a-6hour-hrrr-lcr-kml.shtml")
-    if len(lcrKmlList) > 0:
-        fList.append( lcrKmlList[0] )
-        linkSkeleton='<a href="/lcr/forecast/{0}">Download 6-Hour LCR KML</a>'
-        with open(htmlFile, "w" ) as f:
-            f.write(linkSkeleton.format(os.path.basename(lcrKmlList[0])))
-    elif (os.path.exists(htmlFile)):
-        os.remove(htmlFile)
+    # remember shtml file can get deleted 
+    if SingleToFile("a-6hour-hrrr-lcr-kml.shtml",'<a href="/lcr/forecast/{0}">Download 6 Hour LCR KML</a>', lcrKmlList, True):
+        fList.append( lcrKmlList[0] )        
 
-    htmlFile = path.join(scratchPath,"a-6hour-hrrr-bfp-kml.shtml")
-
-    if len(bfpKmlList) > 0:
+    if SingleToFile("a-6hour-hrrr-bfp-kml.shtml",'<a href="/lcr/forecast/{0}">Download 6 Hour BFP KML</a>', bfpKmlList, True):
         fList.append( bfpKmlList[0] )
-        linkSkeleton='<a href="/lcr/forecast/{0}">Download 6-Hour BFP KML</a>'
-        with open(htmlFile, "w" ) as f:
-            f.write(linkSkeleton.format(os.path.basename(bfpKmlList[0])))
-    elif (os.path.exists(htmlFile)):
-        os.remove(htmlFile)
 
-    return fList        
+
+    return fList
+
+
 
 def prepUpload_24_kml( Model,runDate ):
     # deal with kml files 
@@ -214,41 +191,48 @@ def prepUpload_24_kml( Model,runDate ):
 
     if not os.path.exists(kmlPath):
         return fList
-
-
     
     lcrKmlList = glob.glob(kmlPath+"/hrrr_sfc.r{0}_[0-9]_[0-9][0-9]_lcr.kml".format(runDateStr))
     bfpKmlList = glob.glob(kmlPath+"/hrrr_sfc.r{0}_[0-9]_[0-9][0-9]_bfp.kml".format(runDateStr))
+  
+    
+    if SingleToFile("a-24hour-hrrr-lcr-kml.shtml",'<a href="/lcr/forecast/{0}">Download 24 Hour LCR KML</a>', lcrKmlList, True):
+        fList.append( lcrKmlList[0] )        
 
-    htmlFile = path.join(scratchPath,"a-24hour-hrrr-lcr-kml.shtml")
-
-    if len(lcrKmlList) > 0:
-               fList.append( lcrKmlList[0] )
-               linkSkeleton='<a href="/lcr/forecast/{0}">Download 24 Hour LCR KML</a>'
-               with open(htmlFile, "w" ) as f:
-                    f.write(linkSkeleton.format(os.path.basename(lcrKmlList[0])))
-    elif (os.path.exists(htmlFile)):
-        os.remove(htmlFile)
-
-    htmlFile = path.join(scratchPath,"a-24hour-hrrr-bfp-kml.shtml")    
-
-    if len(bfpKmlList) > 0:
-               fList.append( bfpKmlList[0] )
-               linkSkeleton='<a href="/lcr/forecast/{0}">Download 24 Hour BFP KML</a>'
-               with open(htmlFile, "w" ) as f:
-                    f.write(linkSkeleton.format(os.path.basename(bfpKmlList[0])))
-    elif (os.path.exists(htmlFile)):
-        os.remove(htmlFile)
+    if SingleToFile("a-24hour-hrrr-bfp-kml.shtml",'<a href="/lcr/forecast/{0}">Download 24 Hour BFP KML</a>', bfpKmlList, True):
+        fList.append( bfpKmlList[0] )
+    
 
     return fList
+
+    # if clobber then htmlfile is deleted if fList is empty
+def SingleToFile( htmlFile, TextSkeleton, fList, bClobber=False):
+
+    scratchPath = path.join(lcrBase, "scratch")
+    fl = path.join(scratchPath, htmlFile)
+
+    if len(fList) == 0 :
+        if os.path.exists(fl) and bClobber:
+            os.remove(fl)
+        return False  
+
+    
+    with open(fl, "w" ) as ArchiveFileHandle:
+        ArchiveFileHandle.write( TextSkeleton.format( os.path.basename(fList[0]) ) )
+    
+    return True
+
+
 
 
 def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
     scratchPath = path.join(lcrBase, "scratch")
     fList = []
+    fl = path.join(scratchPath, ArchiveFile)
+    ArchiveFileHandle=open(fl, "w" )
     PngList=glob.glob(lcrPngPath+globPattern)
     if len(PngList) >0 :
-        ArchiveFileHandle=open(path.join(scratchPath,ArchiveFile), "w" )
+        
         PngList.sort( reverse=True )
 
         for Png in PngList:
@@ -257,7 +241,11 @@ def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
             if( dt> BackDate ):
                 fList.append(Png)
                 ArchiveFileHandle.write( TextSkeleton.format( PngBase, dt.strftime("%Y/%m/%d %H") ))
-
+        
+    ArchiveFileHandle.close()
+    if os.path.getsize(fl) == 0:
+        os.remove(fl)
+    
     return fList
 
 
@@ -797,7 +785,7 @@ if __name__ == '__main__':
             cret=doLcr(ncUserFile,2,25)
 
     if(not bSkipUpload):
-        cret=Upload_old(pModel,pDate)
+        cret=Upload(pModel,pDate)
         
     sys.exit(0);
 
