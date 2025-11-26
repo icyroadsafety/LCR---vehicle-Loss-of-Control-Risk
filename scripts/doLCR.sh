@@ -2,10 +2,9 @@
 
 # run the custom lcr.nco script and then
 # create image  lcr map and bfp map
-# This script uses absolute file names as this
-# script is being run in ~/lcr/hrrr_nc_data  and the
-# python scripts lcrmap.py and bfpmap.py require that  cwd is ~/lcr/map   
-# scripts and directories are RELATIVE to this
+# create kml files for both lcr and bfp
+# the script must be run in root directory of the project 
+# This is the first script argument 
 
 DEBUG=0;
 
@@ -27,19 +26,18 @@ plainName=$( basename $inputNcFile );
 cd $projectDir
 
 
-tmpNcFile="$projectDir/scratch/tmp_$plainName";
-ncoNcFile="$projectDir/scratch/nco_$plainName";
-# the python lcrmap.py prefers absolute filenames
-lcrNcFile="$projectDir/scratch/lcr_$plainName"; 
+tmpNcFile="scratch/tmp_$plainName";
+ncoNcFile="scratch/nco_$plainName";
+lcrNcFile="scratch/lcr_$plainName"; 
 
 # output image name - normally to the directory ~/lcr/png
 # the python lcrmap.py prefers absolute filenames
-outputLcrImage="$projectDir/png/${plainName%.nc}_${srtIndex}_${endIndex}_lcr.png";
-outputBfpImage="$projectDir/png/${plainName%.nc}_${srtIndex}_${endIndex}_bfp.png";
+outputLcrImage="png/${plainName%.nc}_${srtIndex}_${endIndex}_lcr.png";
+outputBfpImage="png/${plainName%.nc}_${srtIndex}_${endIndex}_bfp.png";
 
 # output kml files
-outputLcrKml="$projectDir/kml/${plainName%.nc}_${srtIndex}_${endIndex}_lcr.kml";
-outputBfpKml="$projectDir/kml/${plainName%.nc}_${srtIndex}_${endIndex}_bfp.kml";
+outputLcrKml="kml/${plainName%.nc}_${srtIndex}_${endIndex}_lcr.kml";
+outputBfpKml="kml/${plainName%.nc}_${srtIndex}_${endIndex}_bfp.kml";
 
 
 LcrCaption="LCR ${Caption}"
