@@ -243,6 +243,7 @@ def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
                 ArchiveFileHandle.write( TextSkeleton.format( PngBase, dt.strftime("%Y/%m/%d %H") ))
         
     ArchiveFileHandle.close()
+    # remember ArchiveFile gets deleted if glob is empty or no files younger than BackDate 
     if os.path.getsize(fl) == 0:
         os.remove(fl)
     
@@ -250,7 +251,7 @@ def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
 
 
 def Upload_kml(model, runDate):
-    Debug=True
+    Debug=False
     cnt=0
     scratchPath=path.join(lcrBase,"scratch")
 
@@ -292,7 +293,7 @@ def Upload_kml(model, runDate):
     return 0 
 
 def Upload_png(model, runDate):
-    Debug=True
+    Debug=False
     cnt=0
     scratchPath=path.join(lcrBase,"scratch")
 
