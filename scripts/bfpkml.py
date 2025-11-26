@@ -200,16 +200,11 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     script_dir = os.path.dirname(script_dir)
     script_dir= os.path.join(script_dir, "maps"); 
-
-    afp_tbl_path = os.path.join(script_dir, "bfpplus-afp-colors-0-to-1.tbl")
-    nfp_tbl_path = os.path.join(script_dir, "bfpplus-nfp-colors-0-to-1.tbl")
-    bfp_tbl_path = os.path.join(script_dir, "bfpplus-bfp-colors-0-to-1.tbl")
-    cip_tbl_path = os.path.join(script_dir, "bfpplus-cip-colors-0-to-1.tbl")
-
-    afp_colors_full = load_tbl_colors(afp_tbl_path)
-    nfp_colors_full = load_tbl_colors(nfp_tbl_path)
-    bfp_colors_full = load_tbl_colors(bfp_tbl_path)
-    cip_colors_full = load_tbl_colors(cip_tbl_path)
+              
+    afp_colors_full = load_tbl_colors(os.path.join(script_dir, "bfpplus-afp-colors-0-to-1.tbl"))
+    nfp_colors_full = load_tbl_colors(os.path.join(script_dir, "bfpplus-nfp-colors-0-to-1.tbl"))
+    bfp_colors_full = load_tbl_colors(os.path.join(script_dir, "bfpplus-bfp-colors-0-to-1.tbl"))
+    cip_colors_full = load_tbl_colors(os.path.join(script_dir, "bfpplus-cip-colors-0-to-1.tbl"))
 
     afp_colors_5 = sample_5_colors(afp_colors_full)
     nfp_colors_5 = sample_5_colors(nfp_colors_full)

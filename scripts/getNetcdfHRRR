@@ -13,8 +13,10 @@ import pytz
 # from icecream import ic
 #----------------------------------------------------------------------
 #
-fRemoteFileList_6=["a-6hour-hrrr-bfp-archive.shtml",  "a-6hour-hrrr-bfp.shtml", "a-6hour-hrrr-lcr-archive.shtml",  "a-6hour-hrrr-lcr.shtml", "a-last-run-time.shtml"]
+fRemoteFileList_6=["a-6hour-hrrr-bfp-archive.shtml",  "a-6hour-hrrr-bfp.shtml", "a-6hour-hrrr-lcr-archive.shtml",  "a-6hour-hrrr-lcr.shtml", "a-last-run-time.shtml" ]
 fRemoteFileList_24=["a-24hour-hrrr-bfp-archive.shtml",  "a-24hour-hrrr-bfp.shtml", "a-24hour-hrrr-lcr-archive.shtml",  "a-24hour-hrrr-lcr.shtml", "a-24last-run-time.shtml"]
+fRemoteFileList_kml = ["a-6hour-hrrr-lcr-kml.shtml", "a-6hour-hrrr-bfp-kml.shtml","a-24hour-hrrr-lcr-kml.shtml", "a-24hour-hrrr-bfp-kml.shtml"]
+
 rHourList = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
 fcHourList = [6, 12, 18, 24, 30, 36, 42, 48, 54,60,66, 72]
 gfsTimeDelay = 300 # minutes after initial time before grib2 becomes available.
@@ -70,7 +72,7 @@ def doUpload(fList,type=None,overWrite=False):
 
     for rFile in fList:
       rClientFile=os.path.basename(rFile)
-      if( overWrite == False and   rClientFile in fListRemote):
+      if( overWrite == False and  rClientFile in fListRemote):
          continue
 
       try:
@@ -123,6 +125,8 @@ def prepUpload_6( Model, runDate ):
 
     fList+= globToFile("/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_lcr.png", "a-6hour-hrrr-lcr-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', Yesterday )
     fList+= globToFile("/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_bfp.png", "a-6hour-hrrr-bfp-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', Yesterday)
+    
+
 
     return fList
 
@@ -159,7 +163,85 @@ def prepUpload_24( Model, runDate ):
     fList+= globToFile("/hrrr_sfc.r[0-9]*_[0-9]_[0-9][0-9]_lcr.png", "a-24hour-hrrr-lcr-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', BackDate )
     fList+= globToFile("/hrrr_sfc.r[0-9]*_[0-9]_[0-9][0-9]_bfp.png", "a-24hour-hrrr-bfp-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', BackDate)
 
+
+
     return fList
+
+def prepUpload_6_kml( Model, runDate ):
+    fList = []
+
+    runDateStr=runDate.strftime("%Y%m%d%H")
+    kmlPath = path.join(lcrBase,"kml")
+    
+    scratchPath=path.join(lcrBase,"scratch")
+
+    if not os.path.exists(kmlPath):
+        return fList
+
+    
+
+    lcrKmlList = glob.glob(kmlPath+"/hrrr_sfc.r{0}_[0-9]_[0-9]_lcr.kml".format(runDateStr))
+    bfpKmlList = glob.glob(kmlPath+"/hrrr_sfc.r{0}_[0-9]_[0-9]_bfp.kml".format(runDateStr))
+
+    htmlFile = path.join(scratchPath,"a-6hour-hrrr-lcr-kml.shtml")
+    if len(lcrKmlList) > 0:
+        fList.append( lcrKmlList[0] )
+        linkSkeleton='<a href="/lcr/forecast/{0}">Download 6-Hour LCR KML</a>'
+        with open(htmlFile, "w" ) as f:
+            f.write(linkSkeleton.format(os.path.basename(lcrKmlList[0])))
+    elif (os.path.exists(htmlFile)):
+        os.remove(htmlFile)
+
+    htmlFile = path.join(scratchPath,"a-6hour-hrrr-bfp-kml.shtml")
+
+    if len(bfpKmlList) > 0:
+        fList.append( bfpKmlList[0] )
+        linkSkeleton='<a href="/lcr/forecast/{0}">Download 6-Hour BFP KML</a>'
+        with open(htmlFile, "w" ) as f:
+            f.write(linkSkeleton.format(os.path.basename(bfpKmlList[0])))
+    elif (os.path.exists(htmlFile)):
+        os.remove(htmlFile)
+
+    return fList        
+
+def prepUpload_24_kml( Model,runDate ):
+    # deal with kml files 
+    fList = []
+    runDateStr=runDate.strftime("%Y%m%d%H")
+    
+    scratchPath=path.join(lcrBase,"scratch")
+    kmlPath = path.join(lcrBase,"kml")
+
+    if not os.path.exists(kmlPath):
+        return fList
+
+
+    
+    lcrKmlList = glob.glob(kmlPath+"/hrrr_sfc.r{0}_[0-9]_[0-9][0-9]_lcr.kml".format(runDateStr))
+    bfpKmlList = glob.glob(kmlPath+"/hrrr_sfc.r{0}_[0-9]_[0-9][0-9]_bfp.kml".format(runDateStr))
+
+    htmlFile = path.join(scratchPath,"a-24hour-hrrr-lcr-kml.shtml")
+
+    if len(lcrKmlList) > 0:
+               fList.append( lcrKmlList[0] )
+               linkSkeleton='<a href="/lcr/forecast/{0}">Download 24 Hour LCR KML</a>'
+               with open(htmlFile, "w" ) as f:
+                    f.write(linkSkeleton.format(os.path.basename(lcrKmlList[0])))
+    elif (os.path.exists(htmlFile)):
+        os.remove(htmlFile)
+
+    htmlFile = path.join(scratchPath,"a-24hour-hrrr-bfp-kml.shtml")    
+
+    if len(bfpKmlList) > 0:
+               fList.append( bfpKmlList[0] )
+               linkSkeleton='<a href="/lcr/forecast/{0}">Download 24 Hour BFP KML</a>'
+               with open(htmlFile, "w" ) as f:
+                    f.write(linkSkeleton.format(os.path.basename(bfpKmlList[0])))
+    elif (os.path.exists(htmlFile)):
+        os.remove(htmlFile)
+
+    return fList
+
 
 def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
     scratchPath = path.join(lcrBase, "scratch")
@@ -179,11 +261,103 @@ def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
     return fList
 
 
+def Upload_kml(model, runDate):
+    Debug=True
+    cnt=0
+    scratchPath=path.join(lcrBase,"scratch")
+
+    fkmlList=[]
+    fhtmlList=[] 
+
+    fkmlList += prepUpload_6_kml(model,runDate)
+    fkmlList += prepUpload_24_kml(model,runDate)
+    
+    if len(fkmlList)==0:
+        logWrite("Upload_kml(): No lcr/bfp kml files with Date {}".format(runDate))
+        return 0
+
+    for fl in fRemoteFileList_kml:
+        fl=os.path.join(  scratchPath,fl )
+        if(  os.path.exists(fl) ):
+            fhtmlList.append(fl)
+
+    if len(fhtmlList)==0:
+        return 0
+
+    if Debug:
+       print("Upload_kml(): files to upload:")
+       for fl in fkmlList:
+           print(os.path.basename(fl))
+       for fl in fhtmlList:
+           print(os.path.basename(fl) )  
+
+       return len(fkmlList)+len(fhtmlList)   
+
+    # really upload files
+    if cnt:=doUpload(fkmlList ,"kml", False) ==0:
+        return 0
+
+    logWrite(f"Upload_kmk() - uploaded {cnt} png files.")
+
+    cnt=doUpload(fhtmlList ,"shtml", True)
+    logWrite(f"Upload_kml() - uploaded {cnt} shtml files.")
+    return 0 
+
+def Upload_png(model, runDate):
+    Debug=True
+    cnt=0
+    scratchPath=path.join(lcrBase,"scratch")
+
+    fpngList=[]
+    fhtmlList=[] 
+
+    fpngList += prepUpload_6(model,runDate)
+    fpngList += prepUpload_24(model,runDate)
+    
+    if len(fpngList)==0:
+        logWrite("Upload_png(): No lcr/bfp png files with Date {}".format(runDate))
+        return 0
+
+    for fl in fRemoteFileList_6+ fRemoteFileList_24:
+        fl=os.path.join(  scratchPath,fl )
+        if(  os.path.exists(fl) ):
+            fhtmlList.append(fl)
+
+    if len(fhtmlList)==0:
+        return 0
+
+    if Debug:
+       print("Upload_png(): files to upload:")
+       for fl in fpngList:
+           print(os.path.basename(fl))
+       for fl in fhtmlList:
+           print(os.path.basename(fl) )  
+
+       return len(fpngList)+len(fhtmlList)   
+
+    # really upload files
+    if cnt:=doUpload(fpngList ,"png", False) ==0:
+        return 0
+
+    logWrite(f"Upload_png() - uploaded {cnt} png files.")
+
+    cnt=doUpload(fhtmlList ,"shtml", True)
+    logWrite(f"Upload_png() - uploaded {cnt} shtml files.")
+    return 0 
 
 
 def Upload(model, runDate):
+    cnt=0
+
+    cnt=Upload_kml(model, runDate)
+    cnt+=Upload_png(model, runDate)
+
+    return cnt
+
+
+def Upload_old(model, runDate):
     
-    Debug=False
+    Debug=True
     cnt=0
     scratchPath=path.join(lcrBase,"scratch")
 
@@ -535,6 +709,8 @@ def doLcr(ncFile, srtIndex, endIndex):
          logWrite( "Post processing of file %s failed. bfpmap step failed."% ncBase);
        case 5:
          logWrite( "Post processing of file %s failed."% ncBase);
+       case 8:
+         logWrite( "Post processing of file %s failed. kml file creation steps failed."% ncBase);
        case 10:
          logWrite( "Images from  %s already exist."% ncBase);
 
@@ -621,7 +797,7 @@ if __name__ == '__main__':
             cret=doLcr(ncUserFile,2,25)
 
     if(not bSkipUpload):
-        cret=Upload(pModel,pDate)
+        cret=Upload_old(pModel,pDate)
         
     sys.exit(0);
 
