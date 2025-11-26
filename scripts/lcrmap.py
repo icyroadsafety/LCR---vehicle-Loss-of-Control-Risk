@@ -22,7 +22,7 @@ timestamp=sys.argv[3]
 lcrBase=os.path.dirname(__file__)
 lcrBase=os.path.dirname(lcrBase)
 os.chdir(lcrBase)
-os.chdir("maps");
+# os.chdir("maps");
 
 
 # Define custom colors without transparency
@@ -59,8 +59,8 @@ fig, ax = plt.subplots(subplot_kw={'projection': ccrs.Mercator(central_longitude
 ax.set_extent([-127, -65, 21, 48])
 
 # Read the shapefiles for Canada and Mexico
-canada_shapefile = 'shp/CAN_adm0.shp'
-mexico_shapefile = 'shp/MEX_adm1.shp'
+canada_shapefile = 'maps/shp/CAN_adm0.shp'
+mexico_shapefile = 'maps/shp/MEX_adm1.shp'
 
 # Add features for Canada and Mexico
 canada_feature = ShapelyFeature(shpreader.Reader(canada_shapefile).geometries(),
@@ -103,17 +103,17 @@ ax.add_feature(cfeature.NaturalEarthFeature(
 ax.coastlines()
 
 # # Read scale overlay image
-overlay1_path = 'mapoverlays/scalemap1.png'
+overlay1_path = 'maps/mapoverlays/scalemap1.png'
 overlay1 = plt.imread(overlay1_path) 
 ax.imshow(overlay1, extent=[-115.5, -77, 21, 23],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
 
 # # Read logo overlay image
-overlay2_path = 'mapoverlays/logomap.png'
+overlay2_path = 'maps/mapoverlays/logomap.png'
 overlay2 = plt.imread(overlay2_path) 
 ax.imshow(overlay2, extent=[-78, -69, 27, 31],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
 
 # # Read map description overlay image
-overlay3_path = 'mapoverlays/lcrmap-desc1.png'
+overlay3_path = 'maps/mapoverlays/lcrmap-desc1.png'
 overlay3 = plt.imread(overlay3_path) 
 ax.imshow(overlay3, extent=[-126.5, -116.5, 21, 25.6],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
 
@@ -142,7 +142,7 @@ fig.text(0.6865, 0.188, f'11', ha='center', fontsize=10, color=(0/255, 0/255, 0/
 fig.text(0.726, 0.188, f'12', ha='center', fontsize=10, color=(0/255, 0/255, 0/255))
 
 # Add interstate from local data
-reader = shpreader.Reader("shp/tl_2019_us_primaryroads.shp")
+reader = shpreader.Reader("maps/shp/tl_2019_us_primaryroads.shp")
 names = []
 geoms = []
 for rec in reader.records():

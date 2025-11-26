@@ -27,13 +27,13 @@ def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_path
     ax.coastlines()
   
     
-    color_bar1 = plt.imread('mapoverlays/bfpplus-scale8.png')
+    color_bar1 = plt.imread('maps/mapoverlays/bfpplus-scale8.png')
     ax.imshow(color_bar1, extent=[-126.8, -99.7, 21.1, 27.3], transform=ccrs.PlateCarree(), alpha=1, zorder=10) 
 
 
     # Read the shapefiles for Canada and Mexico
-    canada_shapefile = 'shp/CAN_adm0.shp'
-    mexico_shapefile = 'shp/MEX_adm1.shp'
+    canada_shapefile = 'maps/shp/CAN_adm0.shp'
+    mexico_shapefile = 'maps/shp/MEX_adm1.shp'
 
     canada_feature = ShapelyFeature(shpreader.Reader(canada_shapefile).geometries(),
                                 ccrs.PlateCarree(), facecolor=(0.8, 0.8, 0.8), edgecolor='black', alpha=0.3)
@@ -43,7 +43,7 @@ def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_path
     ax.add_feature(mexico_feature)
 
     # Add interstate from local data
-    reader = shpreader.Reader("shp/tl_2019_us_primaryroads.shp")
+    reader = shpreader.Reader("maps/shp/tl_2019_us_primaryroads.shp")
     names = []
     geoms = []
     for rec in reader.records():
@@ -95,7 +95,7 @@ def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_path
     fig.text(0.53, 0.233, f'https://icyroadsafety.com/lcr/', ha='left', fontsize=9.5, color=(0/255, 0/255, 0/255))
 
     # # Read logo overlay image
-    overlay2_path = 'mapoverlays/logomap.png'
+    overlay2_path = 'maps/mapoverlays/logomap.png'
     overlay2 = plt.imread(overlay2_path) 
     ax.imshow(overlay2, extent=[-78, -69, 27, 31],   transform=ccrs.PlateCarree(), alpha=1, zorder=10)
 
@@ -115,11 +115,11 @@ timestamp=sys.argv[3]
 lcrBase=os.path.dirname(__file__)
 lcrBase=os.path.dirname(lcrBase)
 os.chdir(lcrBase)
-os.chdir("maps");
 
 
 
-color_table_paths = ['bfpplus-afp-colors-0-to-1.tbl', 'bfpplus-nfp-colors-0-to-1.tbl', 'bfpplus-bfp-colors-0-to-1.tbl', 'bfpplus-cip-colors-0-to-1.tbl']
+
+color_table_paths = ['maps/bfpplus-afp-colors-0-to-1.tbl', 'maps/bfpplus-nfp-colors-0-to-1.tbl', 'maps/bfpplus-bfp-colors-0-to-1.tbl', 'maps/bfpplus-cip-colors-0-to-1.tbl']
 variable_names = ['afp', 'nfp', 'bfp', 'cip']
 titles = ['AFP Data', 'NFP Data', 'BFP Data', 'CIP Data']
 
