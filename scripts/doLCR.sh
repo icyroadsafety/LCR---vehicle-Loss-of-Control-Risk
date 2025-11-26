@@ -9,7 +9,8 @@
 
 DEBUG=0;
 
-doBFP=1
+doMAP=1
+doKML=1
 
 #gfs or nam or hrrr netcdf4 ? file
 projectDir=$1;
@@ -35,6 +36,11 @@ lcrNcFile="$projectDir/scratch/lcr_$plainName";
 # the python lcrmap.py prefers absolute filenames
 outputLcrImage="$projectDir/png/${plainName%.nc}_${srtIndex}_${endIndex}_lcr.png";
 outputBfpImage="$projectDir/png/${plainName%.nc}_${srtIndex}_${endIndex}_bfp.png";
+
+# output kml files
+outputLcrKml="$projectDir/kml/${plainName%.nc}_${srtIndex}_${endIndex}_lcr.kml";
+outputBfpKml="$projectDir/kml/${plainName%.nc}_${srtIndex}_${endIndex}_bfp.kml";
+
 
 LcrCaption="LCR ${Caption}"
 BfpCaption="BFP+ ${Caption}"
@@ -85,38 +91,76 @@ if [[ $? -ne 0 ]]; then
    exit 2
 fi    
 
-
-
-
-
-CMD="python scripts/lcrmap.py $lcrNcFile $outputLcrImage ${LcrCaption@Q}  &> /tmp/lcrmap.txt"
+# add the variable bfpmerged. Used in bfpkml.py
+CMD="ncap2 -A -D 2 -v -S "scripts/bfpmerge.nco"  $lcrNcFile" 
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
-# run command in backround
-eval ${CMD} 
-# error ? then dump stdout, stderr to stderr
-# if [[  $? -ne 0 ]]; then
-#     cat /tmp/lcrmap.txt
-#     exit 3
-# fi
+$CMD
+[[ $? -ne 0   ]] && exit 2
+
+
 
 
 # bfp taking toooooo long
-if [[ $doBFP -gt 0 ]]; then 
+if [[ $doMAP -gt 0 ]]; then 
+
+    CMD="python scripts/lcrmap.py $lcrNcFile $outputLcrImage ${LcrCaption@Q}  &> /tmp/lcrmap.txt"
+    [[ $DEBUG -gt 0 ]] && echo "$CMD";
+    # run command in backround
+    eval ${CMD} 
+    # error ? then dump stdout, stderr to stderr
+    # if [[  $? -ne 0 ]]; then
+    #     cat /tmp/lcrmap.txt
+    #     exit 3
+    # fi
+
 
     CMD="python scripts/bfpmap.py  $lcrNcFile $outputBfpImage ${BfpCaption@Q} >&  /tmp/bfpmap.txt"
     [[ $DEBUG -gt 0 ]] && echo "$CMD";
     eval ${CMD}   
     # error ? then dump stdout, stderr to stderr
     if [[  $? -ne 0 ]]; then
-	cat /tmp/bfpmap.txt
-	exit 4
+	    cat /tmp/bfpmap.txt
+	    exit 4
     fi
+
+    wait
+
+    # double check
+    [[ !  -e $outputLcrImage ]] && exit 3
+    [[ !  -e $outputBfpImage ]] && exit 4
+
+
 fi
 
-wait
 
-[[ !  -e $outputLcrImage ]] && exit 5
-[[ !  -e $outputBfpImage ]] && exit 5
+if [[ $doKML -gt 0 ]]; then 
+
+    CMD="python scripts/bfpkml.py  $lcrNcFile $outputBfpKml  >&  /tmp/bfpkml.txt"
+    [[ $DEBUG -gt 0 ]] && echo "$CMD";
+    eval ${CMD}   
+    # error ? then dump stdout, stderr to stderr
+    if [[  $? -ne 0 ]]; then
+        cat /tmp/bfpkml.txt
+        exit 8
+    fi
+
+    CMD="python scripts/lcrkml.py  $lcrNcFile $outputLcrKml  >&  /tmp/lcrkml.txt"
+    [[ $DEBUG -gt 0 ]] && echo "$CMD";
+    eval ${CMD}   
+    # error ? then dump stdout, stderr to stderr
+    if [[  $? -ne 0 ]]; then
+        cat /tmp/lcrkml.txt
+        exit 8
+    fi
+
+    # double check
+    [[ !  -e $outputLcrKml ]] && exit 8
+    [[ !  -e $outputBfpKml ]] && exit 8
+
+
+fi
+
+
 
 # delete temporary file
 [[ -e $lcrNcFile ]] && rm $lcrNcFile;
