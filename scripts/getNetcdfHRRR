@@ -1,7 +1,7 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 import os, sys, errno, time, argparse, re, calendar, itertools as it
 import multiprocessing as mp
-from joblib import Parallel, delayed
+# from joblib import Parallel, delayed
 from os import path as path
 from time import gmtime, mktime
 import datetime
