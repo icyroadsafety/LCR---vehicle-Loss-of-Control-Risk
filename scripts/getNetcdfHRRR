@@ -118,6 +118,11 @@ def prepUpload_6( Model, runDate ):
         fList.append( bfpPngList[0] )        
 
 
+    # run date USA style month/day/year?
+    with open(path.join(scratchPath,"a-last-run-time.shtml"), "w" ) as f:
+        f.write(runDate.strftime("%Hz %m/%d/%Y"))
+
+
     Yesterday=datetime.datetime.now() - timedelta(days=1)
 
     fList+= globToFile("/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_lcr.png", "a-6hour-hrrr-lcr-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', Yesterday )
@@ -146,7 +151,9 @@ def prepUpload_24( Model, runDate ):
     if SingleToFile("a-24hour-hrrr-bfp.shtml",'<a href="/lcr/forecast/{0}"><img src="/lcr/forecast/{0}" style="width:100%;"></a>', bfpPngList, True):
         fList.append( bfpPngList[0] )        
 
-
+    # run date USA style month/day/year?
+    with open(path.join(scratchPath,"a-24last-run-time.shtml"), "w" ) as f:
+        f.write(runDate.strftime("%Hz %m/%d/%Y"))
 
     # 4 files in 24 hours so go back six days ?
     BackDate=datetime.datetime.now() - timedelta(days=6)
