@@ -90,7 +90,7 @@ if [[ $? -ne 0 ]]; then
 fi    
 
 # add the variable bfpmerged. Used in bfpkml.py
-CMD="ncap2 -A -D 2 -v -S "scripts/bfpmerge.nco"  $lcrNcFile" 
+CMD="ncap2 -A -D 2 -v -S "scripts/bfpmerge.nco"  $lcrNcFile $lcrNcFile" 
 [[ $DEBUG -gt 0 ]] && echo "$CMD";
 $CMD
 [[ $? -ne 0   ]] && exit 2
