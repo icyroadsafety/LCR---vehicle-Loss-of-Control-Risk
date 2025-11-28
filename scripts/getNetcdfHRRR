@@ -801,8 +801,7 @@ if __name__ == '__main__':
             cret=doLcr(ncUserFile,2,25)
 
     if(not bSkipUpload):
-        #cret=Upload(pModel,pDate)
-        doUpload(['hello.zzz'], '*.zzz', False)
+        cret=Upload(pModel,pDate)
         
     sys.exit(0);
 
