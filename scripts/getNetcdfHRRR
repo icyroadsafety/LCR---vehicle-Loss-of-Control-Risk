@@ -65,9 +65,17 @@ def doUpload(fList,type=None,overWrite=False):
       return 0
 
 
-    if ( type and not overWrite ):     
-      fListRemote=session.nlst("*."+type)
-      fListRemote.sort()
+    if ( type and not overWrite ): 
+      try:
+        fListRemote=session.nlst("*."+type)
+      except ftplib.error_temp as e:                    
+          # File of .type not found on remote.nb HTTP error is 450
+          if e.args[0].startswith('450'):
+            pass
+          else:
+            raise e
+      else:
+        fListRemote.sort()
 
 
     # fList=glob.glob(lcrPngPath+"/*[0-9]*.png")
@@ -289,14 +297,14 @@ def Upload_kml(model, runDate):
        return len(fkmlList)+len(fhtmlList)   
 
     # really upload files
-    if cnt:=doUpload(fkmlList ,"kml", False) ==0:
+    if (cnt:=doUpload(fkmlList ,"kml", False)) == 0:
         return 0
 
     logWrite(f"Upload_kmk() - uploaded {cnt} png files.")
 
-    cnt=doUpload(fhtmlList ,"shtml", True)
-    logWrite(f"Upload_kml() - uploaded {cnt} shtml files.")
-    return 0 
+    cnt_s=doUpload(fhtmlList ,"shtml", True)
+    logWrite(f"Upload_kml() - uploaded {cnt_s} shtml files.")
+    return cnt+cnt_s 
 
 def Upload_png(model, runDate):
     cnt=0
@@ -329,14 +337,14 @@ def Upload_png(model, runDate):
        return len(fpngList)+len(fhtmlList)   
 
     # really upload files
-    if cnt:=doUpload(fpngList ,"png", False) ==0:
+    if (cnt:=doUpload(fpngList ,"png", False)) == 0:
         return 0
 
     logWrite(f"Upload_png() - uploaded {cnt} png files.")
 
-    cnt=doUpload(fhtmlList ,"shtml", True)
-    logWrite(f"Upload_png() - uploaded {cnt} shtml files.")
-    return 0 
+    cnt_s=doUpload(fhtmlList ,"shtml", True)
+    logWrite(f"Upload_png() - uploaded {cnt_s} shtml files.")
+    return cnt+cnt_s 
 
 
 def Upload(model, runDate):
@@ -793,7 +801,8 @@ if __name__ == '__main__':
             cret=doLcr(ncUserFile,2,25)
 
     if(not bSkipUpload):
-        cret=Upload(pModel,pDate)
+        #cret=Upload(pModel,pDate)
+        doUpload(['hello.zzz'], '*.zzz', False)
         
     sys.exit(0);
 
