@@ -300,7 +300,7 @@ def Upload_kml(model, runDate):
     if (cnt:=doUpload(fkmlList ,"kml", False)) == 0:
         return 0
 
-    logWrite(f"Upload_kmk() - uploaded {cnt} png files.")
+    logWrite(f"Upload_kmk() - uploaded {cnt} kml files.")
 
     cnt_s=doUpload(fhtmlList ,"shtml", True)
     logWrite(f"Upload_kml() - uploaded {cnt_s} shtml files.")
