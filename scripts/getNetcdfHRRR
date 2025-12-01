@@ -241,7 +241,7 @@ def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
     fList = []
     fl = path.join(scratchPath, ArchiveFile)
     ArchiveFileHandle=open(fl, "w" )
-    PngList=glob.glob(PngPath+globPattern)
+    PngList=glob.glob(globPattern)
     if len(PngList) >0 :
         
         PngList.sort( reverse=True )
