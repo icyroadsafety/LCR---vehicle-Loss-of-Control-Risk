@@ -1,0 +1,591 @@
+#!/usr/bin/python3
+import os, sys, errno, time, argparse, re, calendar, itertools as it
+import multiprocessing as mp
+from joblib import Parallel, delayed
+from os import path as path
+from time import gmtime, mktime
+import datetime
+from datetime import date, timedelta
+import glob
+import re
+import ftplib
+import pytz
+#----------------------------------------------------------------------
+# getGFS - launches the download of a set of grib2 files
+fRemoteFileList=["a-6hour-hrrr-bfp-archive.shtml",  "a-6hour-hrrr-bfp.shtml", "a-6hour-hrrr-lcr-archive.shtml",  "a-6hour-hrrr-lcr.shtml", "a-last-run-time.shtml"]
+rHourList = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
+fcHourList = [6, 12, 18, 24, 30, 36, 42, 48, 54,60,66, 72]
+gfsTimeDelay = 300 # minutes after initial time before grib2 becomes available.
+
+
+__prog__ = path.splitext(path.basename(__file__))[0]
+
+
+lcrBase = "/projects/me/ICY/LCR---vehicle-Loss-of-Control-Risk"
+
+lcrLogBase =  path.join(lcrBase, "log")
+lcrBinPath = path.join(lcrBase, "scripts")
+lcrPngPath = path.join(lcrBase, "png")
+
+
+logFile = path.join(lcrLogBase, "hrrr-download.log")
+log=open(logFile,"a")
+
+gfsPath = path.join(lcrBase, "hrrr_nc_data")
+
+
+nomadsServer = "http://nomads.ncep.noaa.gov:80"
+hrrrRemotePath = "/dods/hrrr"
+
+
+
+
+bVerbose=0
+
+##############################################################################################################
+def doUpload(fList,overWrite=False):
+    
+    try:
+      # danrobinson@ftp3.ftptoyoursite.com:/www.icyroadsafety.com/web/content/lcr/forecast
+      session = ftplib.FTP('ftp3.ftptoyoursite.com','danrobinson','YXL@icY!VZsM526d')
+      session.cwd('/www.icyroadsafety.com/web/content/lcr/forecast/')
+    except BaseException as exception:
+      logWrite(exception)
+      return 0
+
+
+
+    fListRemote=session.nlst('*.png')
+    fListRemote.sort()
+
+
+    # fList=glob.glob(lcrPngPath+"/*[0-9]*.png")
+    cnt=0;
+
+    for rFile in fList:
+      rClientFile=os.path.basename(rFile)
+      if( not overWrite and  rClientFile in fListRemote):
+         continue
+
+      try:
+        ncfile = open(rFile,'rb')                  # file to send
+        session.storbinary('STOR '+ rClientFile , ncfile)     # send the file
+        ncfile.close()                                    # close file and FTP
+      except BaseException as exception:
+        logWrite(exception)
+        session.quit()
+        return cnt
+
+      cnt+=1
+
+
+
+    session.quit()
+
+    # logWrite("doUpload() - uploaded %d files."% cnt)
+    return cnt
+
+
+def prepUpload( Model, runDate ):
+
+    fList=[]
+
+    runDateStr=runDate.strftime("%Y%m%d%H")
+
+    scratchPath=path.join(lcrBase,"scratch")
+
+    lcrPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r{0}_[0-9]*_[0-9]*_lcr.png".format(runDateStr))
+    bfpPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r{0}_[0-9]*_[0-9]*_bfp.png".format(runDateStr))
+
+    if( len(lcrPngList)==0 or len(bfpPngList)==0 ):
+        return []
+
+    linkSkeleton='<a href="/lcr/forecast/{0}"><img src="/lcr/forecast/{0}" style="width:100%;"></a>'
+    with open(path.join(scratchPath,"a-6hour-hrrr-lcr.shtml"), "w" ) as f:
+        f.write(linkSkeleton.format(os.path.basename(lcrPngList[0])))
+
+    with open(path.join(scratchPath,"a-6hour-hrrr-bfp.shtml"), "w" ) as f:
+        f.write(linkSkeleton.format(os.path.basename(bfpPngList[0])))
+
+   # run date USA style month/day/year?
+    with open(path.join(scratchPath,"a-last-run-time.shtml"), "w" ) as f:
+        f.write(runDate.strftime("%Hz %m/%d/%Y"))
+
+
+
+    Yesterday=datetime.datetime.now() - timedelta(days=1)
+
+    lcrPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r[0-9]*_[0-9]*_[0-9]*_lcr.png")
+    if ( len(lcrPngList)>0 ):
+        lcrPngList.sort( reverse=True )
+        lcrArchiveFile=open(path.join(scratchPath,"a-6hour-hrrr-lcr-archive.shtml"), "w" )
+        for lcrPng in lcrPngList:
+            lcrPngBase=os.path.basename(lcrPng)
+            [model, dt]=mkmodeldate(lcrPngBase)
+            if( dt> Yesterday ):
+                fList.append(lcrPng)
+                lcrArchiveFile.write('<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n'.format( lcrPngBase, dt.strftime("%Y/%m/%d %H") ))
+
+
+    bfpPngList=glob.glob(lcrPngPath+"/hrrr_sfc.r[0-9]*_[0-9]*_[0-9]*_bfp.png")
+    if (len(bfpPngList)  ):
+        bfpArchiveFile=open(path.join(scratchPath,"a-6hour-hrrr-bfp-archive.shtml"), "w" )
+        bfpPngList.sort( reverse=True )
+
+        for bfpPng in bfpPngList:
+            bfpPngBase=os.path.basename(bfpPng)
+            [model, dt]=mkmodeldate(bfpPngBase)
+            if( dt> Yesterday ):
+                fList.append(bfpPng)
+                bfpArchiveFile.write('<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n'.format( bfpPngBase, dt.strftime("%Y/%m/%d %H") ))
+
+
+    return fList
+
+def Upload(model, runDate):
+    Debug=True
+    scratchPath=path.join(lcrBase,"scratch")
+
+    fList=prepUpload(model,runDate)
+
+    if ( len(fList)==0):
+        logWrite("prepUpload: No lcr/bfp images with Date {}".format(runDate))
+        return 0
+
+    # don't overwrite if png exists
+    if (Debug):
+        cnt=len(fList)
+        print(fList);
+    else:
+        cnt=doUpload(fList, False)
+
+    logWrite("Upload() - uploaded %d png files."% cnt)
+
+    # cnt=1
+    # if at least 1 new image has been uploaded then also upload the a*.shtml files
+    if ( cnt == 0):
+        return 0
+
+    fList=[]
+
+    for fl in fRemoteFileList:
+        fl=os.path.join(  scratchPath,fl )
+        if(  os.path.exists(fl) ):
+            fList.append(fl)
+
+    if (Debug):
+        cnt=len(fList)
+        print(fList)
+    else:
+        cnt=doUpload(fList, True)
+
+
+    logWrite("Upload() - uploaded %d shtml files."% cnt)
+
+    return cnt
+
+def mkdate(datestr):
+    return datetime.datetime.strptime(datestr, '%Y-%m-%d')
+
+def mklongdate(datestr):
+    return datetime.datetime.strptime(datestr, '%Y%m%d%H')
+
+def mkmodeldate(baseFileName):
+    if( baseFileName== None ):
+        return [None, None]
+
+    idx=baseFileName.find("_")
+    model=baseFileName[0:(idx-1)]
+
+    idx=baseFileName.find(".")
+    #tmp=baseFileName[idx+2:idx+12]
+    dt=datetime.datetime.strptime(baseFileName[idx+2:idx+12],"%Y%m%d%H")
+
+    return [model, dt ]
+def getGFSTimeABS(gfsStart, fcHour):
+    gfsTimeABS = gfsStart + timedelta(hours=fcHour)
+    return gfsTimeABS
+
+def getGFSTimeEpoch(gfsDateTime):
+#    print gfsDateTime
+    gfsTimeEpoch = calendar.timegm(gfsDateTime.timetuple())
+    return gfsTimeEpoch
+
+#####
+# This one is the epoch used to distinguish seemingly duplicate file names; NOT to be confused with GFSTimeEpoch.
+def epochVal(gH):
+    if (gH < 4): gH += 24
+    return (((gH -4) / 6) * 6 + 4)
+
+#####
+# Return the most-recent GFS Date-Hour of grib2 file that *should* be available,
+# or return GFS Date-Hour specified by --rdate --rhour, rounded to earlier run if needed ...
+def latestGFSStart(dt=None, hr=None):
+    if (dt == None): dt = datetime.fromtimestamp(mktime(gmtime()))
+    if (hr == None): hr = dt.hour
+    ### @note: this works assuming gfsTimeDelay < 6 hours ...
+    gfsStartDate = datetime.datetime.now() - timedelta(minutes=gfsTimeDelay)
+    gfsStartHour = max([h for h in rHourList if h <= gfsStartDate.hour])
+    gfsStart = datetime.datetime.combine(gfsStartDate, datetime.time(gfsStartHour))
+    pStart = datetime.datetime.combine(dt, datetime.time(hr))
+    if (pStart < gfsStart):
+        return pStart
+    else:
+        return gfsStart
+
+
+def logWrite(sMessage):
+     d1=datetime.datetime.now()
+     d1.replace(microsecond=0)         
+
+     
+     sText="%s(%s): %s"%(__prog__,d1.strftime("%m-%d %H:%M"), sMessage)
+     bVerbose and print(sText)
+
+     log.write(sText+"\n")       
+  
+       
+# return full filename of  latest download
+def latestGoodDownload(Model):
+    # flist=glob.glob(gfsPath+"/hrrr_sfc.r??????????.nc")
+    fList=glob.glob(gfsPath+"/hrrr_sfc.r[0-9]*.nc")
+    fList.sort()
+
+    return fList.pop();
+    
+    
+    if( len(fList) >0):
+       fname=os.path.basename(fList.pop());
+        # name of the form gfs.0p50.2015040500.nc     
+       # we just want the date+hour    
+       Ts=fname[-13:-3]
+       # lDate=datetime.datetime.utcfromtimestamp(float(sT))
+       lDate=datetime.datetime.strptime(Ts,"%Y%m%d%H")
+       return lDate  
+    else:
+       return None;       
+
+def listTodayYesterday():
+     listDates=[]
+     Today=datetime.datetime.today();
+     Today=Today.replace(hour=0,minute=0,second=0,microsecond=0)
+     Yesterday=Today-timedelta(days=1)
+     Dbyday=Today-timedelta(days=2)      
+
+     for rH in rHourList:  
+       listDates.append( Today+timedelta(hours=rH) )    
+       listDates.append(Yesterday+timedelta(hours=rH) );
+       listDates.append(Dbyday+timedelta(hours=rH) );
+
+     listDates.sort()
+     listDates.reverse()    
+     # print listDates
+     return listDates;   
+
+# finds latest live gfs data on the server
+# does this by check for existance of a .das file 
+def getRemoteContent(iDate,ext,numProc=1):
+  
+  sDate=iDate.strftime("%Y%m%d"); # string of date
+  sHour=iDate.strftime("%H");     # string of hour  
+
+  fullRemotePath=nomadsServer+hrrrRemotePath+"/hrrr"+sDate+"/hrrr_sfc.t"+sHour+"z";
+  # only append ext if not nc
+  if( ext != "nc" ):
+    fullRemotePath += "."+ext;
+
+  # fullLocalPath=gfsPath+"/gfs.0p50."+sDate+sHour+"."+ext;
+  epochSeconds=time.mktime(iDate.timetuple())
+  
+  fullLocalPath= "{}/hrrr_sfc.r{}{}.{}".format(gfsPath,sDate,sHour, ext)
+  
+  # this string is used by ncl to rebase the time coo-rdinates
+  # from "days since 1-1-1" to "hours since filetimestamp
+  time_units2="hours since {0}".format(iDate.strftime("%Y-%m-%d %H:00"))
+
+  time_opt="small"
+  # temporary test for download whole forecast at 0/6/12/18 hours - nb at these hours fcHour goes to  49 hours
+  if ( int(sHour) % 6 ==0 ):
+      time_opt="all"
+  
+
+  shellCMD= path.join(lcrBinPath,"getNetcdfData.sh")   
+  
+  fullCMD = "{0} {1} {2} {3} {4} {5}".format(shellCMD, fullRemotePath, fullLocalPath,ext, time_opt, "hrrr")
+
+  ret=os.system(fullCMD);
+  ret=os.waitstatus_to_exitcode(ret)
+  
+  if(ret==0 and os.path.isfile(fullLocalPath) ):
+      return fullLocalPath
+    # return os.path.basename(fullLocalPath);
+
+  else:
+    return None;   
+
+# rebase the lon co-ordinate var from 0.0/355.0  to -180/179.5
+def rebaseLocalContent(fullName):
+
+   # fullName=gfsPath+"/"+localName
+   shellCMD= lcrBinPath+"/lon360TO180.sh"
+   shellCMD+= " "+ fullName
+   ret=1
+
+   if( os.path.isfile(fullName)):
+      if (os.system(shellCMD)==0): 
+        logWrite("Have rebased the lon coordinate of the file  {0} ".format(fullName))                        
+   else:
+      logWrite("unable to locate the file {0} ".format(fullName))                        
+
+  
+   return 0;
+
+def Caption (ncFile, srtIndex, endIndex):
+
+    # time step in hours - should be getting this from the ncFile
+    step=1;
+
+    [Product,fcDate]=mkmodeldate(os.path.basename(ncFile))
+    Product=Product.upper();
+
+
+    srtDate=fcDate.astimezone(pytz.timezone('US/Central')) + datetime.timedelta(hours=srtIndex*step)
+    endDate=fcDate.astimezone(pytz.timezone('US/Central')) + datetime.timedelta(hours=endIndex*step)
+
+
+     # LCR maximum values through 10PM CDT Tuesday, December 5, 2023.  Generated from the 19z HRRR
+    # BFP+ maximum values through 10PM CDT Tuesday, December 5, 2023.  Generated from the 19z HRRR
+    title=" maximium values through {}  Generated from {}z {}.".format( endDate.strftime("%l%p CDT %A, %B %e, %Y"),   fcDate.strftime("%H"), Product  )
+    
+    return title
+
+
+def doDownloadCustom(pModel, pDate, bSkipDownload):
+
+
+    fileUserBase="{0}_sfc.r{1}.nc".format(pModel,pDate.strftime("%Y%m%d%H") )
+    fileUser=os.path.join(gfsPath+fileUserBase)
+
+    if( os.path.exists(fileUser)):
+        logWrite( "doDownloadCustom(): Requested file %s already downloaded"% (fileUserBase))
+        return fileUser
+    elif (bSkipDownload):
+        return None
+
+    # if here than try download
+    dasfileName=getRemoteContent(pDate,"das")
+    if (not dasfileName ):
+        logWrite("doDownloadCustom(): Unable to download the user requested {0} file.".format(dasfileName) )
+        os.remove(dasfileName)
+        return None
+
+    logWrite("doDownloadCustom(): downloading user file {0} ".format(fileUserBase))
+    fileName=getRemoteContent(pDate,"nc");
+
+    if( fileName ):
+        logWrite("doDownload(): downloaded user file {0} ".format(fileUserBase))
+        return fileUser
+    else:
+        logWrite("doDownload(): Unable to download the user requested {0} file.".format(fileUserBase) )
+        return None
+
+    return None
+
+
+
+# does it all - checks the local and remote directories directory
+def doDownload(fileUser=None, bSkipDownload=False, Model="hrrr" ):
+
+    fileLastGood=latestGoodDownload(Model);
+    [m, dateLastGood]=mkmodeldate(os.path.basename(fileLastGood))
+    dasFileName=None
+    dateServer=None
+    fileName=None
+
+    if(bSkipDownload):
+        return fileLastGood
+
+    # if here then we have an explicit download request
+    if(fileUser):
+       if( os.path.exists(fileUser)):
+           logWrite( "doDownload(): Requested file %s already downloaded"% (fileUser))
+           return fileUser
+       else:
+            # fileUserBase=os.path.basename(fileUser)
+            [m,dateServer]=mkmodeldate(fileUser)
+            dasfileName=getRemoteContent(dateServer,"das")
+            if (not dasfileName ):
+                logWrite("doDownload(): Unable to download the user requested {0} file.".format(fileUser) )
+                return None
+
+            os.remove(dasfileName)
+            logWrite("doDownload(): downloading user file {0} ".format(fileUser))
+            fileName=getRemoteContent(dateServer,"nc");
+            if( fileName ):
+                logWrite("doDownload(): downloaded user file {0} ".format(fileUser))
+                return fileName
+            else:
+                logWrite("doDownload(): Unable to download the user requested {0} file.".format(fileUser) )
+                return None
+
+    # listDates is in reverse order by date
+    listDates=listTodayYesterday();
+
+    # find first good date
+    for d1 in listDates:
+       dasfileName=getRemoteContent(d1,"das")
+       if ( dasfileName ):
+         dateServer=d1;
+         os.remove(dasfileName);
+         break;
+
+       
+    logWrite( "/***************** Starting hrrr_sfc download script ***********************/")     
+    if(dateLastGood):   
+      logWrite( "Last good download %s"% (dateLastGood.strftime("%Y/%m/%d %H:%M")) )               
+    
+    if(dateServer):
+       logWrite( "Latest hrrr_sfc file on server is dated %s"% (dateServer.strftime("%Y/%m/%d %H:%M")) )    
+    else:
+       logWrite("No hrrr_sfc content from the last 48 hours found on server." )          
+       return None
+
+
+    if( dateLastGood and dateLastGood == dateServer ):       
+       logWrite("The latest hrrr_sfc  data has already been downloaded." )            
+       return fileLastGood
+    elif(dateLastGood and  dateLastGood > dateServer  ):      
+       logWrite("Paradoxically the latest local data is more recent than that on the server." )            
+       return fileLastGood
+
+    # if we are here then we need to download latest
+    fileName=getRemoteContent(dateServer,"nc");    
+    if( fileName): 
+       logWrite("Just downloaded {0} the latest data.".format(fileName) )
+       return fileName
+    else:
+       logWrite("Unable to download {0} the latest data.".format(dasfileName) )                    
+       return None
+
+    return None
+
+def doLcr(fileLastGood, srtIndex, endIndex):
+
+    # file last good download - nb absolute file name
+    if ( not fileLastGood ):
+       fileLastGood=latestGoodDownload()
+       
+    if not fileLastGood:
+        return 0
+
+       
+    Title =  Caption(fileLastGood, srtIndex, endIndex )
+    # title has spaces so quote
+    Title="'"+ Title+"'" 
+    shellCMD= path.join(lcrBinPath,"doLCR.sh")
+   
+    # This script rquires the lcrBase directory - So that absolute file paths can be used
+    # for calls to lcrmap.py and bfpmap.py
+    fullCMD = "{0} {1} {2} {3} {4} {5}".format(shellCMD, lcrBase, fileLastGood, srtIndex, endIndex, Title );
+
+    
+    fileBaseLastGood=path.basename(fileLastGood)
+    ret=os.system(fullCMD);
+    ret=os.waitstatus_to_exitcode(ret)      
+
+    match ret:
+       case 0:
+         logWrite( "Post processing of file %s successful."% fileBaseLastGood);
+       case 1:
+         logWrite( "Post processing of file %s failed. lcr.nco failed."% fileBaseLastGood);
+       case 2:
+         logWrite( "Post processing of file %s failed. ncwa step failed."% fileBaseLastGood);
+       case 3:
+         logWrite( "Post processing of file %s failed. lcrmap step failed."% fileBaseLastGood);
+       case 4:
+         logWrite( "Post processing of file %s failed. bfpmap step failed."% fileBaseLastGood);
+       case 5:
+         logWrite( "Post processing of file %s failed."% fileBaseLastGood);
+       case 10:
+         logWrite( "Images from  %s already exist."% fileBaseLastGood);
+
+    if ret == 0 or ret == 10:
+       return 1
+
+    return 0;           
+
+
+
+
+ 
+##############################################################################################################
+__version__ = "0.0.42-01"
+parser = argparse.ArgumentParser(prog=__prog__,
+    description='Launch the download jobs for a set of GFS grib2 files.  Most-recent run-date and run-hour are launched by default.',
+    formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=42,width=120))
+parser.add_argument('--background', action='store_true', help='launch downloads in background (daemonize) ')
+parser.add_argument('--dryrun', action='store_true', help="show command stream but don't execute it")
+parser.add_argument('-f', '--fchour', nargs='+', type=int, choices=fcHourList, help='limit downloading to specified forecast-hour(s)')
+parser.add_argument('-j', '--jobs', nargs='?', type=int, default=4, help='number of paralel processes')
+parser.add_argument('-q', '--quiet', action='store_true', help='silent as the grave')
+parser.add_argument('--rdate', nargs='?', type=mklongdate, help='Specify with a date/time an explict nc file to download')
+parser.add_argument('--rhour', nargs='?', type=int, choices=rHourList, help='download grib2 files fpr specified run-hour(s)')
+parser.add_argument('--skip-download', action='store_true', help='assume data already downloaded; just launch the render-and-slice process.')
+parser.add_argument('--skip-processing', action='store_true', help='do NOT launch the render-and-slice process after download.')
+parser.add_argument('--skip-upload', action='store_true', help='do NOT upload to the server using ftp.')
+parser.add_argument('-v', '--verbose', action='count', default=0, help='blather-on ...')
+parser.add_argument('-V', '--version', action='version', version='%(prog)s  (version {0})'.format(__version__), help='print version info.')
+##############################################################################################################
+if __name__ == '__main__':
+    os.nice(20) # Be VERY nice!
+
+    args = parser.parse_args()
+
+#    print(args)
+    bDaemon = args.background
+    bDryRun = args.dryrun
+    pfcHour = args.fchour or fcHourList
+    parallelJobCount = args.jobs
+    bQuiet = args.quiet
+    pDate = args.rdate
+    # if (pDate == None): pDate = gmtime()
+    # rDate = datetime.datetime.fromtimestamp(mktime(pDate))
+    # rHour = args.rhour
+    # if (rHour == None): rHour = rDate.hour
+    bSkipProcessing = args.skip_processing
+    bSkipDownload = args.skip_download
+    bSkipUpload = args.skip_upload
+    bVerbose = args.verbose
+    if (bVerbose): bQuiet = False
+    ncLocalFile=None
+    ncUserFile=None
+    pModel="hrrr"
+
+    #its best to be located in the gfs_data directory as in the shell script there is wget 
+    # which creates a local file in the cwd- which is later renamed with an absolute filename
+    os.chdir(gfsPath)
+
+    # a user specified file
+    if(pDate):
+        ncUserFile="{0}_sfc.r{1}.nc".format(pModel,pDate.strftime("%Y%m%d%H") )
+
+     # possibly a user specifed time stamp
+    ncLocalFile=doDownload(ncUserFile,bSkipDownload,pModel)
+
+    # should have a log message from doDownload
+    if(not ncLocalFile):
+        sys.exit(1)
+
+    [m, pDate]=mkmodeldate(os.path.basename(ncLocalFile))
+
+
+    # hard coded indices temporary hack    
+    if not bSkipProcessing :
+        cret=doLcr(ncLocalFile,2,9)
+
+
+    if(not bSkipUpload):
+        cret=Upload(pModel,pDate)
+        
+    sys.exit(0);
+
