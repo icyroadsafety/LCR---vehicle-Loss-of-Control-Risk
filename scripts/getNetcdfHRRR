@@ -24,7 +24,6 @@ rHourList = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
 fcHourList = [6, 12, 18, 24, 30, 36, 42, 48, 54,60,66, 72]
 gfsTimeDelay = 300 # minutes after initial time before grib2 becomes available.
 
-DEBUG=False
 
 __prog__ = os.path.basename(__file__)
 
@@ -261,26 +260,28 @@ def globToFile(globPattern, ArchiveFile, TextSkeleton, BackDate):
     return fList
 
 
-def Upload_kml(model, runDate):
+def Upload_kml(model, runDate, b24Hour):
     
     cnt=0
-    bf6 = False
-    bf24 = False
 
     fList=[]
     fhtmlList=[] 
 
-    fList_6= prepUpload_6_kml(model,runDate)
-    fList_24= prepUpload_24_kml(model,runDate)
+    # delete all associated html files
+    for fl in fRemoteFileList_kml:
+        fl=os.path.join(  scratchPath,fl )
+        if(  os.path.exists(fl) ):
+            os.remove(fl)
 
-    bf6 = len(fList_6 )>0
-    bf24 = len(fList_24 )>0
 
-    fList=fList_6+fList_24
+    fList= prepUpload_6_kml(model,runDate)
+    if b24Hour:
+        fList+= prepUpload_24_kml(model,runDate)
+
     
     if len(fList)==0:
         logWrite("Upload_kml(): No lcr/bfp kml files with Date {}".format(runDate))
-        return False,False
+        return 0
 
     for fl in fRemoteFileList_kml:
         fl=os.path.join(  scratchPath,fl )
@@ -289,7 +290,7 @@ def Upload_kml(model, runDate):
 
     # belt and braces
     if len(fhtmlList)==0:
-        return False, False
+        return 0
 
     if DEBUG:
        print("Upload_kml(): files to upload:")
@@ -301,35 +302,32 @@ def Upload_kml(model, runDate):
 
     # really upload files
     if (cnt:=doUpload(fList ,"kml", False)) == 0:
-        return False, False
+        return cnt
     
     logWrite(f"Upload_kml() - uploaded {cnt} kml files.")
 
     cnt_s=doUpload(fhtmlList ,"shtml", True)
     logWrite(f"Upload_kml() - uploaded {cnt_s} shtml files.")
 
-    return bf6, bf24
+    return cnt
 
-def Upload_png(model, runDate):
+def Upload_png(model, runDate, b24Hour):
     cnt=0
-    bf6 = False
-    bf24 = False
 
     fList=[]
     fhtmlList=[] 
 
-    fList_6 = prepUpload_6(model,runDate)
-    fList_24 = prepUpload_24(model,runDate)
-    fList=fList_6+fList_24
+            
 
-
-    bf6 = len(fList_6 )>0
-    bf24 = len(fList_24 )>0
+    fList = prepUpload_6(model,runDate)
+    if b24Hour:
+        fList += prepUpload_24(model,runDate)
+    
 
     
     if len(fList)==0:
         logWrite("Upload_png(): No lcr/bfp png files with Date {}".format(runDate))
-        return False, False
+        return 0
 
     for fl in fRemoteFileList_6+ fRemoteFileList_24:
         fl=os.path.join(  scratchPath,fl )
@@ -337,7 +335,7 @@ def Upload_png(model, runDate):
             fhtmlList.append(fl)
 
     if len(fhtmlList)==0:
-        return False, False
+        return 0
 
     if DEBUG:
        print("Upload_png(): files to upload:")
@@ -349,15 +347,18 @@ def Upload_png(model, runDate):
 
     # really upload files
     if (cnt:=doUpload(fList ,"png", False)) == 0:
-        return False, False
+        return 0
 
     logWrite(f"Upload_png() - uploaded {cnt} png files.")
 
     cnt_s=doUpload(fhtmlList ,"shtml", True)
     logWrite(f"Upload_png() - uploaded {cnt_s} shtml files.")
-    return bf6, bf24
+    return cnt
 
-def Upload_ts(model, runDate, b6, b24):
+def Upload_ts(model, runDate, b24Hout):
+
+    
+
 
     fhtmlList = []
 
@@ -385,22 +386,49 @@ def Upload_ts(model, runDate, b6, b24):
     if len(fhtmlList)==0:
         return 0
 
-    cnt=doUpload( fhtmlList, "shtml", True)
+    
 
     logWrite(f"Upload_ts() - uploaded {cnt} shtml files.")
     return cnt
 
 
 
-def Upload(model, runDate):
+def Upload(model, runDate, b24Hour):
+
+    fhtmlList=[]
     cnt=0
 
-    bkml6, bkml24=Upload_kml(model, runDate)
-    bpng6, bpng24=Upload_png(model, runDate)
-    # we have at least one 6 hour forecast file
-    cnt = Upload_ts(model, runDate, bkml6 or bpng6, bkml24 or bpng24)
+    # delete all associated shtml files
+    for fl in fRemoteFileList_6 + fRemoteFileList_24 + fRemoteFileList_kml + fRemoteFileList_ts :
+        fl=os.path.join(  scratchPath,fl )
+        if(  os.path.exists(fl) ):
+            os.remove(fl)
+    
 
-    return cnt
+
+    cnt_kml=Upload_kml(model, runDate, b24Hour)
+    cnt_png=Upload_png(model, runDate, b24Hour)
+    # we have at least one 6 hour forecast file
+
+    if cnt_kml  or cnt_png:
+           
+        fn = path.join(scratchPath,"a-last-run-time.shtml")
+         # run date USA style month/day/year?
+        with open(fn, "w" ) as f:
+            f.write(runDate.strftime("%Hz %m/%d/%Y"))
+        fhtmlList.append(fn)
+ 
+
+        if b24Hour:
+            fn = path.join(scratchPath,"a-24last-run-time.shtml")
+            # run date USA style month/day/year?
+            with open(fn, "w" ) as f:
+                f.write(runDate.strftime("%Hz %m/%d/%Y"))
+            fhtmlList.append(fn)
+
+        cnt=doUpload( fhtmlList, "shtml", True)
+
+    return cnt_kml+cnt_png
 
 
 def Upload_old(model, runDate):
@@ -825,7 +853,7 @@ if __name__ == '__main__':
     ncUserFile=None
     pModel="hrrr"
 
-    print(f"DEGUG={DEBUG}")
+    
 
     
     # all files directories kml, png, scratch, log, hrrr_nc_data are relative to lcrBase, the project root
@@ -843,16 +871,21 @@ if __name__ == '__main__':
     if(not ncUserFile):
         sys.exit(1)
 
+    
+    b24Hour = True if pDate.hour in [0,6,12,18] else False
+
+
     # hard coded indices temporary hack    
     if not bSkipProcessing and ncUserFile:
         # process hourly
         cret = doLcr(ncUserFile, 2, 9)
         # run 24 hour model four times a day
-        if pDate.hour in [0, 6, 12, 18]:
+        if b24Hour:
             cret=doLcr(ncUserFile,2,25)
 
     if(not bSkipUpload):
-        cret=Upload(pModel,pDate)
+
+        cret=Upload(pModel,pDate,b24Hour)
         
     sys.exit(0);
 
