@@ -36,7 +36,7 @@ log=open(logFile,"a")
 
 
 
-lcrBinPath = "scripts"
+binPath = "scripts"
 PngPath = "png"
 gfsPath = "hrrr_nc_data"
 scratchPath = "scratch"
@@ -355,41 +355,6 @@ def Upload_png(model, runDate, b24Hour):
     logWrite(f"Upload_png() - uploaded {cnt_s} shtml files.")
     return cnt
 
-def Upload_ts(model, runDate, b24Hout):
-
-    
-
-
-    fhtmlList = []
-
-    fn = path.join(scratchPath,"a-last-run-time.shtml")
-    if b6:
-        # run date USA style month/day/year?
-        with open(fn, "w" ) as f:
-            f.write(runDate.strftime("%Hz %m/%d/%Y"))
-        fhtmlList.append(fn)
-    else:
-        if os.path.exists(fn):
-            os.remove(fn)
-
-    fn = path.join(scratchPath,"a-24last-run-time.shtml")
-
-    if b24:
-        # run date USA style month/day/year?
-        with open(fn, "w" ) as f:
-            f.write(runDate.strftime("%Hz %m/%d/%Y"))
-        fhtmlList.append(fn)
-    else:
-        if os.path.exists(fn):
-            os.remove(fn)
-
-    if len(fhtmlList)==0:
-        return 0
-
-    
-
-    logWrite(f"Upload_ts() - uploaded {cnt} shtml files.")
-    return cnt
 
 
 
@@ -431,54 +396,6 @@ def Upload(model, runDate, b24Hour):
     return cnt_kml+cnt_png
 
 
-def Upload_old(model, runDate):
-    
-    Debug=True
-    cnt=0
-    scratchPath=path.join(lcrBase,"scratch")
-
-    if ( model == None or runDate == None ):
-        return 0
-
-
-    fList=prepUpload_6(model,runDate)
-    fList+= prepUpload_24(model,runDate)
-    if ( len(fList)==0):
-        logWrite("prepUpload: No lcr/bfp images with Date {}".format(runDate))
-        return 0
-
-    # don't overwrite if png exists
-    if (Debug):
-        cnt=len(fList)
-        print(fList);
-    else:
-        cnt=doUpload(fList,"png", False)
-
-    logWrite("Upload() - uploaded %d png files."% cnt)
-
-    # cnt=1
-
-    # if at least 1 new image has been uploaded then also upload the a*.shtml files
-    if ( cnt == 0):
-       return 0
-
-    fList=[]
-
-    for fl in fRemoteFileList_6+ fRemoteFileList_24:
-        fl=os.path.join(  scratchPath,fl )
-        if(  os.path.exists(fl) ):
-            fList.append(fl)
-
-    if (Debug):
-        cnt=len(fList)
-        print(fList)
-    else:
-        cnt=doUpload(fList,"shtml", True)
-
-
-    logWrite("Upload() - uploaded %d shtml files."% cnt)
-
-    return cnt
 
 def mkdate(datestr):
     return datetime.datetime.strptime(datestr, '%Y-%m-%d')
@@ -610,7 +527,7 @@ def getRemoteContent(iDate,ext,numProc=1):
 
   if(Debug): time_opt="tst"
 
-  shellCMD= path.join(lcrBinPath,"getNetcdfData.sh")   
+  shellCMD= path.join(binPath,"getNetcdfData.sh")   
   
   fullCMD = "{0} {1} {2} {3} {4} {5}".format(shellCMD, fullRemotePath, LocalPath,ext, time_opt, "hrrr")
 
@@ -628,7 +545,7 @@ def getRemoteContent(iDate,ext,numProc=1):
 def rebaseLocalContent(fullName):
 
    # fullName=gfsPath+"/"+localName
-   shellCMD= lcrBinPath+"/lon360TO180.sh"
+   shellCMD= binPath+"/lon360TO180.sh"
    shellCMD+= " "+ fullName
    ret=1
 
@@ -763,7 +680,7 @@ def doLcr(ncFile, srtIndex, endIndex):
     Title =  Caption(ncFile, srtIndex, endIndex)
     # title has spaces so quote
     Title="'"+ Title+"'" 
-    shellCMD= path.join(lcrBinPath,"doLCR.sh")
+    shellCMD= path.join(binPath,"doLCR.sh")
    
     # This script rquires the lcrBase directory - So that absolute file paths can be used
     # for calls to lcrmap.py and bfpmap.py
