@@ -134,7 +134,8 @@ def prepUpload_6( Model, runDate ):
         fList.append( bfpPngList[0] )        
 
 
-    Yesterday=datetime.datetime.now() - timedelta(days=1)
+    # Yesterday=datetime.datetime.now() - timedelta(days=1)
+    Yesterday=runDate - timedelta(days=1)
 
     fList+= globToFile(PngPath+"/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_lcr.png", "a-6hour-hrrr-lcr-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', Yesterday )
     fList+= globToFile(PngPath+"/hrrr_sfc.r[0-9]*_[0-9]_[0-9]_bfp.png", "a-6hour-hrrr-bfp-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', Yesterday)
@@ -163,7 +164,8 @@ def prepUpload_24( Model, runDate ):
 
 
     # 4 files in 24 hours so go back six days ?
-    BackDate=datetime.datetime.now() - timedelta(days=6)
+    # BackDate=datetime.datetime.now() - timedelta(days=6)
+    BackDate=runDate - timedelta(days=6)
 
     fList+= globToFile(PngPath+"/hrrr_sfc.r[0-9]*_[0-9]_[0-9][0-9]_lcr.png", "a-24hour-hrrr-lcr-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', BackDate )
     fList+= globToFile(PngPath+"/hrrr_sfc.r[0-9]*_[0-9]_[0-9][0-9]_bfp.png", "a-24hour-hrrr-bfp-archive.shtml", '<a href="/lcr/forecast/{}">{}z HRRR</a><br>\n', BackDate)
