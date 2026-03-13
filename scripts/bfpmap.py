@@ -58,9 +58,9 @@ def create_overlayed_bfp_plot(nc_file, output_image, timestamp, color_table_path
     for color_table_path, variable_name, title in zip(color_table_paths, variable_names, titles):
         # data = xr.open_dataset(data_path)
         # data = data.where(data != 0)
-        color_table_data = pd.read_csv(color_table_path, skiprows=3, delim_whitespace=True, names=['red', 'green', 'blue']) 
+        color_table_data = pd.read_csv(color_table_path, skiprows=4, sep='[ ]+', engine='python', names=['red', 'green', 'blue']) 
         color_table_data[['red', 'green', 'blue']] = color_table_data[['red', 'green', 'blue']].apply(pd.to_numeric, errors='coerce') / 255.0
-        color_table_data = color_table_data.dropna()
+        # color_table_data = color_table_data.dropna()
         cmap = mcolors.ListedColormap(color_table_data.values)
         plot = data[variable_name].plot(ax=ax, cmap=cmap, add_colorbar=False,transform=ccrs.PlateCarree(), vmin=0, vmax=0.1)
 
