@@ -58,6 +58,12 @@ fig, ax = plt.subplots(subplot_kw={'projection': ccrs.Mercator(central_longitude
 # Set the extent for the Mercator projection
 ax.set_extent([-127, -65, 21, 48])
 
+# Use levels to map values 1-12 to colors 0-11 in the custom colormap and plot the data
+levels = np.arange(0.5, 13.5, 1)
+plot = ds['lcr'].plot(ax=ax, transform=ccrs.PlateCarree(), cmap=custom_cmap, add_colorbar=False, levels=levels, vmin=0, vmax=13)
+
+
+
 # Read the shapefiles for Canada and Mexico
 canada_shapefile = 'maps/shp/CAN_adm0.shp'
 mexico_shapefile = 'maps/shp/MEX_adm1.shp'
@@ -72,9 +78,6 @@ mexico_feature = ShapelyFeature(shpreader.Reader(mexico_shapefile).geometries(),
 ax.add_feature(canada_feature)
 ax.add_feature(mexico_feature)
 
-# Use levels to map values 1-12 to colors 0-11 in the custom colormap and plot the data
-levels = np.arange(0.5, 13.5, 1)
-plot = ds['lcr'].plot(ax=ax, transform=ccrs.PlateCarree(), cmap=custom_cmap, add_colorbar=False, levels=levels, vmin=0, vmax=13)
 
 # # Add map features such as roads, borders, states, rivers, and lakes
 ax.add_feature(cfeature.NaturalEarthFeature(
